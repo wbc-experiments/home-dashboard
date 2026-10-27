@@ -383,7 +383,7 @@
         <div>
           <div class="section-title">⚡ Adlington ➔ Piccadilly (Next 3)</div>
           <div class="train-table" id="outbound-trains">
-            <div class="empty">Checking live Darwin board...</div>
+            <div class="empty">Checking live train board...</div>
           </div>
         </div>
 
@@ -409,11 +409,12 @@
   </div>
 
   <script>
-    // URL Hash Config: #rail=TOKEN&calendar=TOKEN&calId=ID
+    // URL Hash Config: #app_id=YOUR_ID&app_key=YOUR_KEY&calendar=TOKEN&calId=ID
     const hash = new URLSearchParams(window.location.hash.substring(1));
-    const NRE_TOKEN = hash.get('rail') || "YOUR_DARWIN_TOKEN";
-    const GOOGLE_KEY = hash.get('calendar');
-    const CAL_ID = hash.get('calId');
+    const APP_ID = (hash.get('app_id') || '').trim();
+    const APP_KEY = (hash.get('app_key') || '').trim();
+    const GOOGLE_KEY = (hash.get('calendar') || '').trim();
+    const CAL_ID = (hash.get('calId') || '').trim();
 
     function updateTime() {
       const now = new Date();
@@ -423,7 +424,7 @@
     setInterval(updateTime, 1000);
     updateTime();
 
-    // Weather calculation helper for specific hour windows
+    // 1. Weather calculation helper for specific hour windows
     function calculateWindow(hourlyData, startHour, endHour) {
       const targetIndices = hourlyData.time.reduce((acc, t, i) => {
         const h = new Date(t).getHours();
@@ -457,13 +458,13 @@
         document.getElementById('man-temp').innerText = `${Math.round(man.current.temperature_2m)}°`;
         document.getElementById('man-rain').innerText = `Rain: ${man.current.precipitation_probability ?? 0}%`;
 
-        // Morning commute window: 07:30 - 08:30 (evaluating 7h and 8h blocks)
+        // Morning commute window: 07:30 - 08:30
         const amWalk = calculateWindow(man.hourly, 7, 8);
         document.getElementById('am-walk-temp').innerText = amWalk.temp;
         document.getElementById('am-walk-rain').innerText = `Rain: ${amWalk.rain}`;
         document.getElementById('am-walk-icon').innerText = amWalk.icon;
 
-        // Evening commute window: 15:30 - 16:30 (evaluating 15h and 16h blocks)
+        // Evening commute window: 15:30 - 16:30
         const pmWalk = calculateWindow(man.hourly, 15, 16);
         document.getElementById('pm-walk-temp').innerText = pmWalk.temp;
         document.getElementById('pm-walk-rain').innerText = `Rain: ${pmWalk.rain}`;
@@ -474,30 +475,31 @@
       }
     }
 
-    function renderTrains(containerId, services) {
+    // 2. Render helper for train departures
+    function renderTransportApiTrains(containerId, departures) {
       const container = document.getElementById(containerId);
-      if (!services || services.length === 0) {
+      if (!departures || departures.length === 0) {
         container.innerHTML = `<div class="empty">No services scheduled in this window.</div>`;
         return;
       }
 
-      container.innerHTML = services.map(s => {
-        const isCancelled = s.isCancelled || s.etd === "Cancelled";
-        const isDelayed = s.etd && s.etd !== "On time" && !isCancelled;
+      container.innerHTML = departures.map(s => {
+        const isCancelled = s.status === "CANCELLED";
+        const isDelayed = s.status === "LATE";
         const statusClass = isCancelled ? 'cancelled' : (isDelayed ? 'delayed' : 'on-time');
-        const statusText = isCancelled ? 'Cancelled' : (s.etd || 'On time');
+        const statusText = isCancelled ? 'Cancelled' : (s.expected_departure_time || 'On time');
         
-        const coaches = s.length && s.length > 0 ? `🚃 ${s.length} cars` : '🚃 Length --';
         const platform = s.platform ? `Plat ${s.platform}` : 'Plat TBD';
+        const operator = s.operator_name || 'Northern';
 
         return `
           <div class="train-card">
             <div class="time-slot">
-              <span class="dep-time">${s.std}</span>
+              <span class="dep-time">${s.aimed_departure_time}</span>
               <span class="meta">
                 <span>${platform}</span>
                 <span>&bull;</span>
-                <span class="coaches">${coaches}</span>
+                <span class="coaches">${operator}</span>
               </span>
             </div>
             <div class="status-slot">
@@ -508,78 +510,82 @@
       }).join('');
     }
 
-    // URL Hash parameters: #app_id=YOUR_ID&app_key=YOUR_KEY
-const hash = new URLSearchParams(window.location.hash.substring(1));
-const APP_ID = hash.get('app_id') || "YOUR_APP_ID";
-const APP_KEY = hash.get('app_key') || "YOUR_APP_KEY";
+    // 3. Train Fetching via TransportAPI (Direct CORS support)
+    async function fetchTrains() {
+      if (!APP_ID || !APP_KEY) {
+        document.getElementById('outbound-trains').innerHTML = `<div class="empty" style="color:var(--ochre)">API key required in URL hash (#app_id=...&app_key=...)</div>`;
+        document.getElementById('return-trains').innerHTML = `<div class="empty" style="color:var(--ochre)">API key required in URL hash (#app_id=...&app_key=...)</div>`;
+        return;
+      }
 
-async function fetchTrains() {
-  if (!APP_ID || APP_ID === "YOUR_APP_ID") {
-    document.getElementById('outbound-trains').innerHTML = `<div class="empty" style="color:var(--ochre)">API key required in URL hash (#app_id=...&app_key=...)</div>`;
-    document.getElementById('return-trains').innerHTML = `<div class="empty" style="color:var(--ochre)">API key required in URL hash (#app_id=...&app_key=...)</div>`;
-    return;
-  }
+      try {
+        // Outbound: Adlington (ADL) -> Manchester Piccadilly (MAN)
+        const outUrl = `https://transportapi.com/v3/uk/train/station/ADL/live.json?app_id=${APP_ID}&app_key=${APP_KEY}&calling_at=MAN&darwin=true&train_status=passenger`;
+        const outRes = await fetch(outUrl);
+        const outData = await outRes.json();
+        const outbound = (outData.departures?.all || []).slice(0, 3);
+        renderTransportApiTrains('outbound-trains', outbound);
 
-  try {
-    // 1. Outbound: Adlington (ADL) -> Manchester Piccadilly (MAN)
-    const outUrl = `https://transportapi.com/v3/uk/train/station/ADL/live.json?app_id=${APP_ID}&app_key=${APP_KEY}&calling_at=MAN&darwin=true&train_status=passenger`;
-    const outRes = await fetch(outUrl);
-    const outData = await outRes.json();
-    const outbound = (outData.departures?.all || []).slice(0, 3);
-    renderTransportApiTrains('outbound-trains', outbound);
+        // Return: Manchester Piccadilly (MAN) -> Adlington (ADL) from 16:00
+        const retUrl = `https://transportapi.com/v3/uk/train/station/MAN/live.json?app_id=${APP_ID}&app_key=${APP_KEY}&calling_at=ADL&darwin=true&train_status=passenger`;
+        const retRes = await fetch(retUrl);
+        const retData = await retRes.json();
+        const allReturns = retData.departures?.all || [];
 
-    // 2. Return: Manchester Piccadilly (MAN) -> Adlington (ADL) from 16:00
-    const retUrl = `https://transportapi.com/v3/uk/train/station/MAN/live.json?app_id=${APP_ID}&app_key=${APP_KEY}&calling_at=ADL&darwin=true&train_status=passenger`;
-    const retRes = await fetch(retUrl);
-    const retData = await retRes.json();
-    const allReturns = retData.departures?.all || [];
+        const eveningReturns = allReturns.filter(s => {
+          const [h] = s.aimed_departure_time.split(':').map(Number);
+          return h >= 16;
+        }).slice(0, 3);
 
-    // Filter for services after 16:00
-    const eveningReturns = allReturns.filter(s => {
-      const [h] = s.aimed_departure_time.split(':').map(Number);
-      return h >= 16;
-    }).slice(0, 3);
+        renderTransportApiTrains('return-trains', eveningReturns.length > 0 ? eveningReturns : allReturns.slice(0, 3));
 
-    renderTransportApiTrains('return-trains', eveningReturns.length > 0 ? eveningReturns : allReturns.slice(0, 3));
+      } catch (err) {
+        console.error("Rail error:", err);
+      }
+    }
 
-  } catch (err) {
-    console.error("Rail error:", err);
-  }
-}
+    // 4. City Events
+    async function fetchEvents() {
+      const container = document.getElementById('events-stream');
+      if (!GOOGLE_KEY || !CAL_ID) {
+        container.innerHTML = `
+          <div class="event-row">
+            <span class="event-time">--:--</span>
+            <span class="event-desc" style="color:var(--text-muted)">Connect calendar via hash to view live arena/match events</span>
+            <span class="event-loc">Etihad / Old Trafford / AO / Co-op Live</span>
+          </div>
+        `;
+        return;
+      }
 
-function renderTransportApiTrains(containerId, departures) {
-  const container = document.getElementById(containerId);
-  if (!departures || departures.length === 0) {
-    container.innerHTML = `<div class="empty">No services scheduled in this window.</div>`;
-    return;
-  }
+      const now = new Date();
+      const start = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+      const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59).toISOString();
 
-  container.innerHTML = departures.map(s => {
-    const isCancelled = s.status === "CANCELLED";
-    const isDelayed = s.status === "LATE";
-    const statusClass = isCancelled ? 'cancelled' : (isDelayed ? 'delayed' : 'on-time');
-    const statusText = isCancelled ? 'Cancelled' : (s.expected_departure_time || 'On time');
-    
-    const platform = s.platform ? `Plat ${s.platform}` : 'Plat TBD';
-    const operator = s.operator_name || 'Northern';
+      try {
+        const res = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(CAL_ID)}/events?timeMin=${start}&timeMax=${end}&singleEvents=true&orderBy=startTime&key=${GOOGLE_KEY}`);
+        const data = await res.json();
+        const items = data.items || [];
 
-    return `
-      <div class="train-card">
-        <div class="time-slot">
-          <span class="dep-time">${s.aimed_departure_time}</span>
-          <span class="meta">
-            <span>${platform}</span>
-            <span>&bull;</span>
-            <span class="coaches">${operator}</span>
-          </span>
-        </div>
-        <div class="status-slot">
-          <span class="status-badge ${statusClass}">${statusText}</span>
-        </div>
-      </div>
-    `;
-  }).join('');
-}
+        if (items.length === 0) {
+          container.innerHTML = `<div class="empty">✅ No major stadium or arena events flagged today. Normal city travel.</div>`;
+          return;
+        }
+
+        container.innerHTML = items.map(ev => {
+          const t = ev.start.dateTime ? new Date(ev.start.dateTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'All Day';
+          return `
+            <div class="event-row">
+              <span class="event-time">${t}</span>
+              <span class="event-desc">⚽/🎤 ${ev.summary}</span>
+              <span class="event-loc">${ev.location || 'Manchester'}</span>
+            </div>
+          `;
+        }).join('');
+      } catch (e) {
+        container.innerHTML = `<div class="empty">Unable to check events.</div>`;
+      }
+    }
 
     fetchWeather();
     fetchTrains();
