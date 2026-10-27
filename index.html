@@ -3,1104 +3,558 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Adlington ➔ Manchester Piccadilly | Morning Commute Dashboard</title>
-  <!-- Tailwind CSS CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
-<!-- Google Fonts: Inter & JetBrains Mono -->
+  <title>Commute • Adlington ⇄ Manchester</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
-  <!-- Lucide Icons -->
-  <script src="https://unpkg.com/lucide@latest"></script>
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          fontFamily: {
-            sans: ['Inter', 'sans-serif'],
-            mono: ['JetBrains Mono', 'monospace'],
-          },
-          colors: {
-            slate: {
-              850: '#151f32',
-              900: '#0f172a',
-              950: '#070b14',
-            },
-            rail: {
-              ontime: '#10b981',
-              delayed: '#f59e0b',
-              cancelled: '#ef4444',
-            }
-          }
-        }
-      }
-    }
-  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
-    /* Custom styling for sleek dark kiosk mode */
+    :root {
+      --bg: #0b0d10;
+      --surface: #12161c;
+      --border: rgba(255, 255, 255, 0.05);
+      --text: #e2e8f0;
+      --text-muted: #64748b;
+      --text-dim: #475569;
+      
+      /* Vibrant Ochre / Amber Accent */
+      --ochre: #f59e0b;
+      --ochre-glow: rgba(245, 158, 11, 0.12);
+      --ochre-bright: #fbbf24;
+      
+      --green: #10b981;
+      --red: #f43f5e;
+      --mono: 'JetBrains Mono', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
     body {
-      background-color: #070b14;
-      color: #f1f5f9;
-      user-select: none;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+      padding: 2.5rem;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
       -webkit-font-smoothing: antialiased;
     }
-    .glass-panel {
-      background: rgba(15, 23, 42, 0.78);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
-      border: 1px solid rgba(255, 255, 255, 0.08);
+
+    .container {
+      width: 100%;
+      max-width: 960px;
+      display: flex;
+      flex-direction: column;
+      gap: 3rem;
     }
-    .glass-panel-subtle {
-      background: rgba(30, 41, 59, 0.45);
-      border: 1px solid rgba(255, 255, 255, 0.05);
+
+    /* Minimal Header */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 1.5rem;
     }
-    /* Custom pulse dot animation */
-    @keyframes subtlePulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.5; transform: scale(0.92); }
+
+    .clock {
+      font-family: var(--mono);
+      font-size: 3rem;
+      font-weight: 600;
+      letter-spacing: -0.04em;
+      line-height: 1;
+      color: #fff;
     }
-    .animate-live-dot {
-      animation: subtlePulse 2.2s infinite ease-in-out;
+
+    .date {
+      color: var(--ochre);
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-top: 0.4rem;
     }
-    /* Hide scrollbars for clean display kiosk */
-    ::-webkit-scrollbar {
-      width: 4px;
-      height: 4px;
+
+    .route-indicator {
+      text-align: right;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      letter-spacing: 0.05em;
     }
-    ::-webkit-scrollbar-track {
-      background: transparent;
+    
+    .route-indicator span {
+      color: var(--ochre-bright);
+      font-weight: 600;
     }
-    ::-webkit-scrollbar-thumb {
-      background: rgba(255, 255, 255, 0.15);
-      border-radius: 9999px;
+
+    /* Section Labeling */
+    .section-title {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text-dim);
+      margin-bottom: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .section-title::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* Weather Strip */
+    .weather-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.25rem;
+    }
+
+    .weather-tile {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem;
+      position: relative;
+    }
+
+    .weather-tile.highlight {
+      border-color: rgba(245, 158, 11, 0.25);
+      background: linear-gradient(180deg, var(--surface) 0%, rgba(245, 158, 11, 0.03) 100%);
+    }
+
+    .tile-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 0.5rem;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .tile-label .time-tag {
+      color: var(--ochre);
+      font-family: var(--mono);
+      font-size: 0.7rem;
+    }
+
+    .tile-temp {
+      font-size: 2.25rem;
+      font-weight: 700;
+      color: #fff;
+      font-family: var(--mono);
+      letter-spacing: -0.03em;
+    }
+
+    .tile-sub {
+      margin-top: 0.4rem;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    .tile-sub .rain {
+      color: var(--ochre);
+      font-weight: 500;
+    }
+
+    /* Rail Section */
+    .rail-columns {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+    }
+
+    .train-table {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .train-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem 1.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: border-color 0.2s;
+    }
+
+    .train-card:first-child {
+      border-color: rgba(245, 158, 11, 0.3);
+      box-shadow: 0 4px 20px -2px var(--ochre-glow);
+    }
+
+    .time-slot {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .dep-time {
+      font-family: var(--mono);
+      font-size: 1.35rem;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .meta {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .meta .coaches {
+      color: var(--ochre-bright);
+      font-weight: 600;
+    }
+
+    .status-slot {
+      text-align: right;
+    }
+
+    .status-badge {
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      font-weight: 600;
+      padding: 0.25rem 0.5rem;
+      border-radius: 6px;
+      display: inline-block;
+    }
+
+    .status-badge.on-time {
+      color: var(--green);
+      background: rgba(16, 185, 129, 0.1);
+    }
+
+    .status-badge.delayed {
+      color: var(--ochre);
+      background: var(--ochre-glow);
+    }
+
+    .status-badge.cancelled {
+      color: var(--red);
+      background: rgba(244, 63, 94, 0.1);
+    }
+
+    /* Events Bar */
+    .events-stream {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .event-row {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+      padding: 0.85rem 1.25rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+
+    .event-time {
+      font-family: var(--mono);
+      font-size: 0.85rem;
+      color: var(--ochre);
+      font-weight: 600;
+      min-width: 55px;
+    }
+
+    .event-desc {
+      font-size: 0.9rem;
+      font-weight: 500;
+    }
+
+    .event-loc {
+      color: var(--text-dim);
+      font-size: 0.8rem;
+      margin-left: auto;
+    }
+
+    .empty {
+      color: var(--text-dim);
+      font-size: 0.85rem;
+      padding: 0.75rem 0;
+      font-style: italic;
+    }
+
+    @media (max-width: 768px) {
+      .weather-grid, .rail-columns {
+        grid-template-columns: 1fr;
+      }
+      body {
+        padding: 1.5rem;
+      }
     }
   </style>
 </head>
-<body class="min-h-screen flex flex-col justify-between p-3 sm:p-5 lg:p-6 text-slate-100 overflow-x-hidden">
+<body>
 
-  <!-- TOP HEADER / GLANCE BAR -->
-  <header class="w-full flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 mb-3 border-b border-white/10">
-    <div class="flex items-center gap-4">
-      <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-sky-500/20">
-        <i data-lucide="train" class="w-6 h-6 text-white"></i>
-      </div>
-      <div>
-        <div class="flex items-center gap-2">
-          <span class="text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5">
-            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-live-dot"></span>
-            LIVE COMMUTE
-          </span>
-          <span class="text-xs text-slate-400 font-medium">Adlington (Lancs) ➔ Manchester Piccadilly</span>
-        </div>
-        <h1 id="greetingText" class="text-xl sm:text-2xl font-bold tracking-tight text-white mt-0.5">Good Morning, Commuter</h1>
-      </div>
-    </div>
-
-    <!-- Clock, Date & Refresh Controls -->
-    <div class="flex items-center gap-4 self-stretch sm:self-auto justify-between sm:justify-end">
-      <div class="text-right">
-        <div id="liveClock" class="font-mono text-3xl sm:text-4xl font-bold tracking-tight text-white">07:24<span class="text-lg text-slate-400 font-light"> AM</span></div>
-        <div id="liveDate" class="text-xs sm:text-sm text-slate-400 font-medium tracking-wide">Tuesday, 27 October</div>
-      </div>
-
-      <div class="flex items-center gap-2 pl-3 border-l border-white/10">
-        <button id="refreshBtn" onclick="manualRefresh()" title="Refresh now" class="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 transition border border-white/10 text-slate-300 hover:text-white">
-          <i id="refreshIcon" data-lucide="rotate-cw" class="w-4 h-4"></i>
-        </button>
-        <button onclick="toggleSettingsModal(true)" title="Dashboard Settings" class="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 transition border border-white/10 text-slate-300 hover:text-white">
-          <i data-lucide="sliders-horizontal" class="w-4 h-4"></i>
-        </button>
-      </div>
-    </div>
-  </header>
-
-  <!-- MAIN GRID CONTENT -->
-  <main class="grid grid-cols-1 lg:grid-cols-12 gap-5 flex-grow">
+  <div class="container">
     
-    <!-- LEFT 7 COLS: TRAIN DEPARTURES & LIVE RAIL STATUS -->
-    <div class="lg:col-span-7 flex flex-col gap-4">
-      
-      <!-- TRAINS HERO BOARD -->
-      <section class="glass-panel rounded-3xl p-5 shadow-2xl relative overflow-hidden flex flex-col flex-1">
-        <!-- Station Header -->
-        <div class="flex items-center justify-between pb-4 border-b border-white/10">
-          <div class="flex items-center gap-3">
-            <div class="px-2.5 py-1 rounded-lg bg-yellow-400/10 border border-yellow-400/30 text-yellow-400 font-mono font-bold text-sm tracking-wider">
-              ADL ➔ MAN
-            </div>
-            <div>
-              <h2 class="font-bold text-lg text-white tracking-tight flex items-center gap-2">
-                Adlington (Lancashire)
-                <i data-lucide="arrow-right" class="w-4 h-4 text-slate-400"></i>
-                Manchester Piccadilly
-              </h2>
-              <p class="text-xs text-slate-400">Next direct & connecting trains via Northern Rail</p>
-            </div>
-          </div>
-          <div class="text-right flex flex-col items-end">
-            <span id="railSourceTag" class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-500/30">
-              National Rail Darwin
-            </span>
-            <span id="nextUpdateCountdown" class="text-[11px] font-mono text-slate-400 mt-1">Refreshes in 60s</span>
+    <!-- Minimal Clock & Status -->
+    <header>
+      <div>
+        <div class="clock" id="clock">--:--</div>
+        <div class="date" id="date-label">Loading...</div>
+      </div>
+      <div class="route-indicator">
+        Northern Rail ➔ <span>Adlington ⇄ Piccadilly</span>
+      </div>
+    </header>
+
+    <!-- Weather Trio -->
+    <section>
+      <div class="section-title">Weather Conditions</div>
+      <div class="weather-grid">
+        <div class="weather-tile">
+          <div class="tile-label">Adlington (Home)</div>
+          <div class="tile-temp" id="adl-temp">--°</div>
+          <div class="tile-sub">
+            <span class="rain" id="adl-rain">Rain: --%</span>
           </div>
         </div>
 
-        <!-- Train Table / Cards List -->
-        <div class="mt-4 flex-grow flex flex-col justify-between">
-          <div id="trainListContainer" class="space-y-2.5">
-            <!-- Train items injected by JavaScript -->
-            <div class="flex items-center justify-center p-12 text-slate-400 text-sm">
-              <i data-lucide="loader-2" class="w-5 h-5 animate-spin mr-2"></i> Fetching live departures from Adlington...
-            </div>
-          </div>
-
-          <!-- Bottom Commute Pro-Tip / Line Advisory -->
-          <div id="commuterHint" class="mt-4 p-3 rounded-2xl glass-panel-subtle flex items-start gap-3 text-xs text-slate-300 border-l-4 border-l-sky-500">
-            <i data-lucide="info" class="w-4 h-4 text-sky-400 shrink-0 mt-0.5"></i>
-            <div>
-              <span class="font-semibold text-white">Commuter Tip:</span>
-              Typical direct journey time from Adlington to Manchester Piccadilly is approx. 38–46 mins. Have your smart card or m-ticket ready.
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- TRAVEL IMPACT & MANCHESTER CROWD RADAR -->
-      <section class="glass-panel rounded-3xl p-5 shadow-2xl">
-        <div class="flex items-center justify-between pb-3 border-b border-white/10">
-          <div class="flex items-center gap-2.5">
-            <div class="p-1.5 rounded-lg bg-rose-500/20 border border-rose-500/30 text-rose-400">
-              <i data-lucide="calendar-clock" class="w-4 h-4"></i>
-            </div>
-            <div>
-              <h2 class="font-bold text-sm tracking-tight text-white uppercase">Manchester City Travel Impact & Event Radar</h2>
-              <p class="text-xs text-slate-400">Footie fixtures & Arena gigs affecting train lines & city centre congestion</p>
-            </div>
-          </div>
-          <!-- Filter toggle for today vs week -->
-          <div class="inline-flex rounded-lg bg-slate-900 p-0.5 border border-white/10 text-xs">
-            <button id="viewTodayBtn" onclick="switchEventFilter('today')" class="px-2.5 py-1 rounded-md font-medium text-white bg-slate-800 shadow-sm transition">Today</button>
-            <button id="viewUpcomingBtn" onclick="switchEventFilter('upcoming')" class="px-2.5 py-1 rounded-md font-medium text-slate-400 hover:text-white transition">Next 7 Days</button>
+        <div class="weather-tile">
+          <div class="tile-label">Manchester (Current)</div>
+          <div class="tile-temp" id="man-temp">--°</div>
+          <div class="tile-sub">
+            <span class="rain" id="man-rain">Rain: --%</span>
           </div>
         </div>
 
-        <div id="eventsContainer" class="mt-3.5 grid grid-cols-1 md:grid-cols-2 gap-2.5">
-          <!-- Populated by JS -->
-        </div>
-
-        <!-- Tram / Rail Impact Footnote -->
-        <div class="mt-3.5 pt-3 border-t border-white/5 flex flex-wrap items-center justify-between text-xs text-slate-400 gap-2">
-          <div class="flex items-center gap-2">
-            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
-            <span>Metrolink Piccadilly Line: <strong class="text-slate-200 font-medium">Good Service</strong></span>
+        <div class="weather-tile highlight">
+          <div class="tile-label">
+            Manchester Walk Window
+            <span class="time-tag">15:00 - 17:00</span>
           </div>
-          <div class="flex items-center gap-2">
-            <span class="w-2 h-2 rounded-full bg-amber-400"></span>
-            <span>Old Trafford / Etihad Tram: <strong class="text-slate-200 font-medium" id="tramCongestionText">Expect Peak Queues post 17:00</strong></span>
+          <div class="tile-temp" id="walk-temp">--°</div>
+          <div class="tile-sub">
+            <span class="rain" id="walk-rain">Rain: --%</span>
+            <span id="walk-summary">Loading...</span>
           </div>
         </div>
-      </section>
+      </div>
+    </section>
 
-    </div>
-
-    <!-- RIGHT 5 COLS: DUAL WEATHER (ADLINGTON VS MANCHESTER) & COMMUTE QUICK GLANCE -->
-    <div class="lg:col-span-5 flex flex-col gap-4">
-      
-      <!-- WEATHER SECTION CONTAINER -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4">
+    <!-- Rail Sections (Outbound & Return) -->
+    <section>
+      <div class="rail-columns">
         
-        <!-- CARD 1: ADLINGTON (HOME WEATHER) -->
-        <div class="glass-panel rounded-3xl p-5 relative overflow-hidden group hover:border-white/20 transition">
-          <div class="flex items-start justify-between">
-            <div>
-              <div class="flex items-center gap-1.5 text-xs font-semibold text-emerald-400 uppercase tracking-wider">
-                <i data-lucide="home" class="w-3.5 h-3.5"></i>
-                <span>Home Weather</span>
-              </div>
-              <h3 class="text-lg font-bold text-white mt-0.5">Adlington, Lancs</h3>
-              <p class="text-xs text-slate-400">Chorley borough (PR6 / PR7)</p>
-            </div>
-            <div id="adlWeatherIcon" class="p-2.5 rounded-2xl bg-slate-800/80 border border-white/10 text-sky-400">
-              <i data-lucide="cloud-rain" class="w-8 h-8"></i>
-            </div>
-          </div>
-
-          <div class="mt-4 flex items-baseline justify-between">
-            <div>
-              <div class="flex items-baseline">
-                <span id="adlTemp" class="text-4xl font-extrabold tracking-tight text-white font-mono">--°</span>
-                <span class="text-slate-400 text-sm ml-1 font-medium">C</span>
-              </div>
-              <p id="adlCondition" class="text-xs font-medium text-slate-300 mt-1">Loading forecast...</p>
-            </div>
-            
-            <div class="text-right space-y-1">
-              <div class="text-xs text-slate-400">Feels like <span id="adlFeelsLike" class="font-semibold text-slate-200">--°C</span></div>
-              <div class="text-xs text-slate-400">High / Low: <span id="adlHighLow" class="font-semibold text-slate-200">-- / --</span></div>
-            </div>
-          </div>
-
-          <!-- Weather Micro-Metrics Bar -->
-          <div class="mt-4 pt-3 border-t border-white/10 grid grid-cols-3 gap-2 text-center text-xs">
-            <div class="p-2 rounded-xl bg-slate-800/40">
-              <div class="text-slate-400 text-[10px] uppercase font-semibold flex items-center justify-center gap-1">
-                <i data-lucide="umbrella" class="w-3 h-3 text-sky-400"></i> Rain Chance
-              </div>
-              <div id="adlPrecipChance" class="font-mono font-bold text-slate-200 mt-0.5">--%</div>
-            </div>
-            <div class="p-2 rounded-xl bg-slate-800/40">
-              <div class="text-slate-400 text-[10px] uppercase font-semibold flex items-center justify-center gap-1">
-                <i data-lucide="wind" class="w-3 h-3 text-indigo-400"></i> Wind
-              </div>
-              <div id="adlWind" class="font-mono font-bold text-slate-200 mt-0.5">-- mph</div>
-            </div>
-            <div class="p-2 rounded-xl bg-slate-800/40">
-              <div class="text-slate-400 text-[10px] uppercase font-semibold flex items-center justify-center gap-1">
-                <i data-lucide="shield-alert" class="w-3 h-3 text-amber-400"></i> Coat Advice
-              </div>
-              <div id="adlCoatAdvice" class="font-semibold text-slate-200 mt-0.5 truncate">Checking...</div>
-            </div>
+        <!-- Outbound -->
+        <div>
+          <div class="section-title">Adlington ➔ Manchester Piccadilly</div>
+          <div class="train-table" id="outbound-trains">
+            <div class="empty">Checking live Darwin board...</div>
           </div>
         </div>
 
-        <!-- CARD 2: MANCHESTER CITY CENTRE (DESTINATION WEATHER) -->
-        <div class="glass-panel rounded-3xl p-5 relative overflow-hidden group hover:border-white/20 transition">
-          <div class="flex items-start justify-between">
-            <div>
-              <div class="flex items-center gap-1.5 text-xs font-semibold text-sky-400 uppercase tracking-wider">
-                <i data-lucide="building-2" class="w-3.5 h-3.5"></i>
-                <span>Destination Weather</span>
-              </div>
-              <h3 class="text-lg font-bold text-white mt-0.5">Manchester City Centre</h3>
-              <p class="text-xs text-slate-400">Piccadilly / Oxford Rd / Victoria</p>
-            </div>
-            <div id="manWeatherIcon" class="p-2.5 rounded-2xl bg-slate-800/80 border border-white/10 text-indigo-400">
-              <i data-lucide="cloud-sun" class="w-8 h-8"></i>
-            </div>
-          </div>
-
-          <div class="mt-4 flex items-baseline justify-between">
-            <div>
-              <div class="flex items-baseline">
-                <span id="manTemp" class="text-4xl font-extrabold tracking-tight text-white font-mono">--°</span>
-                <span class="text-slate-400 text-sm ml-1 font-medium">C</span>
-              </div>
-              <p id="manCondition" class="text-xs font-medium text-slate-300 mt-1">Loading forecast...</p>
-            </div>
-            
-            <div class="text-right space-y-1">
-              <div class="text-xs text-slate-400">Feels like <span id="manFeelsLike" class="font-semibold text-slate-200">--°C</span></div>
-              <div class="text-xs text-slate-400">High / Low: <span id="manHighLow" class="font-semibold text-slate-200">-- / --</span></div>
-            </div>
-          </div>
-
-          <!-- Weather Micro-Metrics Bar -->
-          <div class="mt-4 pt-3 border-t border-white/10 grid grid-cols-3 gap-2 text-center text-xs">
-            <div class="p-2 rounded-xl bg-slate-800/40">
-              <div class="text-slate-400 text-[10px] uppercase font-semibold flex items-center justify-center gap-1">
-                <i data-lucide="umbrella" class="w-3 h-3 text-sky-400"></i> Rain Chance
-              </div>
-              <div id="manPrecipChance" class="font-mono font-bold text-slate-200 mt-0.5">--%</div>
-            </div>
-            <div class="p-2 rounded-xl bg-slate-800/40">
-              <div class="text-slate-400 text-[10px] uppercase font-semibold flex items-center justify-center gap-1">
-                <i data-lucide="wind" class="w-3 h-3 text-indigo-400"></i> Wind
-              </div>
-              <div id="manWind" class="font-mono font-bold text-slate-200 mt-0.5">-- mph</div>
-            </div>
-            <div class="p-2 rounded-xl bg-slate-800/40">
-              <div class="text-slate-400 text-[10px] uppercase font-semibold flex items-center justify-center gap-1">
-                <i data-lucide="eye" class="w-3 h-3 text-emerald-400"></i> Visibility
-              </div>
-              <div id="manVisibility" class="font-mono font-bold text-slate-200 mt-0.5">Good</div>
-            </div>
+        <!-- Return -->
+        <div>
+          <div class="section-title">Return Trains (Piccadilly ➔ ADL from 16:00)</div>
+          <div class="train-table" id="return-trains">
+            <div class="empty">Checking evening schedule...</div>
           </div>
         </div>
 
       </div>
+    </section>
 
-      <!-- COMMUTER QUICK SUMMARY CARD -->
-      <div class="glass-panel rounded-3xl p-5 flex flex-col justify-between flex-grow">
-        <div>
-          <div class="flex items-center justify-between pb-3 border-b border-white/10">
-            <span class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-              <i data-lucide="compass" class="w-4 h-4 text-emerald-400"></i> Commute Summary
-            </span>
-            <span id="verdictBadge" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-              Smooth Journey Expected
-            </span>
-          </div>
-
-          <div class="mt-3.5 space-y-2.5 text-xs">
-            <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-800/40 border border-white/5">
-              <span class="text-slate-400">Walking to Adlington Station:</span>
-              <span id="brollyStatus" class="font-semibold text-slate-200 flex items-center gap-1">
-                Checking precipitation...
-              </span>
-            </div>
-            <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-800/40 border border-white/5">
-              <span class="text-slate-400">Target Train Platform:</span>
-              <span class="font-mono font-bold text-amber-300">Platform 2 (Southbound to Manchester)</span>
-            </div>
-            <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-800/40 border border-white/5">
-              <span class="text-slate-400">Evening Return Pinch-point:</span>
-              <span id="eveningPinchPoint" class="font-medium text-slate-200">Checking tonight's gigs...</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-[11px] text-slate-400">
-          <span>Station Code: <strong class="text-slate-200">ADL</strong> ➔ <strong class="text-slate-200">MAN</strong></span>
-          <span class="font-mono">Auto-refreshes every 60s</span>
-        </div>
+    <!-- Disruption & Events -->
+    <section>
+      <div class="section-title">City Events & Crowd Radar</div>
+      <div class="events-stream" id="events-stream">
+        <div class="empty">Scanning Manchester United, City, Co-op Live & AO Arena...</div>
       </div>
+    </section>
 
-    </div>
-  </main>
-
-  <!-- FOOTER -->
-  <footer class="mt-4 pt-3 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-400 gap-2">
-    <div class="flex items-center gap-2">
-      <span class="w-1.5 h-1.5 rounded-full bg-sky-400"></span>
-      <span>Adlington (Lancs) Morning Commute Kiosk</span>
-      <span class="text-slate-400">• Powered by Open-Meteo & Huxley 2 National Rail</span>
-    </div>
-    <div class="flex items-center gap-4">
-      <button onclick="toggleAddEventModal(true)" class="hover:text-sky-400 transition flex items-center gap-1">
-        <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i> Add Custom Travel Alert
-      </button>
-      <span class="text-slate-400">|</span>
-      <button onclick="simulateDelayToggle()" class="hover:text-amber-400 transition flex items-center gap-1">
-        <i data-lucide="activity" class="w-3.5 h-3.5"></i> Test Delay View
-      </button>
-    </div>
-  </footer>
-
-  <!-- SETTINGS MODAL -->
-  <div id="settingsModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="glass-panel w-full max-w-md rounded-3xl p-6 border border-white/20 shadow-2xl space-y-4">
-      <div class="flex items-center justify-between pb-3 border-b border-white/10">
-        <h3 class="font-bold text-lg text-white flex items-center gap-2">
-          <i data-lucide="settings" class="w-5 h-5 text-sky-400"></i> Dashboard Preferences
-        </h3>
-        <button onclick="toggleSettingsModal(false)" class="text-slate-400 hover:text-white p-1">
-          <i data-lucide="x" class="w-5 h-5"></i>
-        </button>
-      </div>
-
-      <div class="space-y-4 text-xs">
-        <div>
-          <label class="block font-semibold text-slate-200 mb-1">Departure Station</label>
-          <input type="text" id="cfgFromStation" value="Adlington (Lancashire) [ADL]" disabled class="w-full bg-slate-900 border border-white/10 rounded-xl p-2.5 text-slate-400 cursor-not-allowed">
-        </div>
-        <div>
-          <label class="block font-semibold text-slate-200 mb-1">Destination Station</label>
-          <input type="text" id="cfgToStation" value="Manchester Piccadilly [MAN]" disabled class="w-full bg-slate-900 border border-white/10 rounded-xl p-2.5 text-slate-400 cursor-not-allowed">
-        </div>
-        <div>
-          <label class="block font-semibold text-slate-200 mb-1">Custom Huxley 2 API Base URL</label>
-          <input type="text" id="cfgHuxleyUrl" value="https://huxley2.azurewebsites.net" placeholder="https://huxley2.azurewebsites.net" class="w-full bg-slate-900 border border-white/10 rounded-xl p-2.5 text-slate-200 focus:outline-none focus:border-sky-500 font-mono">
-          <p class="text-[11px] text-slate-400 mt-1">Default Huxley 2 endpoint. Leave untouched unless using a dedicated mirror.</p>
-        </div>
-        <div>
-          <label class="block font-semibold text-slate-200 mb-1">Huxley Access Token (Optional)</label>
-          <input type="password" id="cfgHuxleyToken" placeholder="Leave empty for public mirror" class="w-full bg-slate-900 border border-white/10 rounded-xl p-2.5 text-slate-200 focus:outline-none focus:border-sky-500 font-mono">
-        </div>
-        <div class="pt-2 flex justify-end gap-2">
-          <button onclick="toggleSettingsModal(false)" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300">Cancel</button>
-          <button onclick="saveSettings()" class="px-4 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-white font-semibold">Save Settings</button>
-        </div>
-      </div>
-    </div>
   </div>
 
-  <!-- ADD CUSTOM EVENT MODAL -->
-  <div id="addEventModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="glass-panel w-full max-w-md rounded-3xl p-6 border border-white/20 shadow-2xl space-y-4">
-      <div class="flex items-center justify-between pb-3 border-b border-white/10">
-        <h3 class="font-bold text-lg text-white flex items-center gap-2">
-          <i data-lucide="plus-circle" class="w-5 h-5 text-rose-400"></i> Add Manchester City Alert
-        </h3>
-        <button onclick="toggleAddEventModal(false)" class="text-slate-400 hover:text-white p-1">
-          <i data-lucide="x" class="w-5 h-5"></i>
-        </button>
-      </div>
-
-      <div class="space-y-3 text-xs">
-        <div>
-          <label class="block font-semibold text-slate-200 mb-1">Event or Disruption Title</label>
-          <input type="text" id="newEventTitle" placeholder="e.g. Liam Gallagher Concert, Metro Rail Works" class="w-full bg-slate-900 border border-white/10 rounded-xl p-2.5 text-slate-200 focus:outline-none focus:border-rose-500">
-        </div>
-        <div class="grid grid-cols-2 gap-2">
-          <div>
-            <label class="block font-semibold text-slate-200 mb-1">Venue / Location</label>
-            <select id="newEventVenue" class="w-full bg-slate-900 border border-white/10 rounded-xl p-2.5 text-slate-200 focus:outline-none focus:border-rose-500">
-              <option value="Co-op Live">Co-op Live Arena</option>
-              <option value="AO Arena">AO Arena (Victoria)</option>
-              <option value="Old Trafford">Old Trafford (Man Utd)</option>
-              <option value="Etihad Stadium">Etihad Stadium (Man City)</option>
-              <option value="Manchester Central">Manchester Central / City</option>
-            </select>
-          </div>
-          <div>
-            <label class="block font-semibold text-slate-200 mb-1">Time</label>
-            <input type="text" id="newEventTime" placeholder="e.g. 19:30 or All Day" class="w-full bg-slate-900 border border-white/10 rounded-xl p-2.5 text-slate-200 focus:outline-none focus:border-rose-500">
-          </div>
-        </div>
-        <div>
-          <label class="block font-semibold text-slate-200 mb-1">Expected Crowd / Impact Level</label>
-          <select id="newEventImpact" class="w-full bg-slate-900 border border-white/10 rounded-xl p-2.5 text-slate-200">
-            <option value="HIGH">HIGH (Stadium fixture / 20k+ arena sellout)</option>
-            <option value="MEDIUM">MEDIUM (10k-18k evening crowds)</option>
-            <option value="LOW">LOW (Localized)</option>
-          </select>
-        </div>
-        <div class="pt-2 flex justify-end gap-2">
-          <button onclick="toggleAddEventModal(false)" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300">Cancel</button>
-          <button onclick="addCustomEventSubmit()" class="px-4 py-2 rounded-xl bg-rose-500 hover:bg-rose-400 text-white font-semibold">Add to Radar</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- JAVASCRIPT LOGIC -->
   <script>
-    /* -------------------------------------------------------------
-       STATE MANAGEMENT & LOCAL STORAGE CONFIG
-    ------------------------------------------------------------- */
-    const CONFIG = {
-      fromStation: 'ADL', // Adlington (Lancashire)
-      toStation: 'MAN',   // Manchester Piccadilly
-      huxleyBaseUrl: localStorage.getItem('huxley_url') || 'https://huxley2.azurewebsites.net',
-      huxleyToken: localStorage.getItem('huxley_token') || '',
-      refreshIntervalSec: 60,
-      // Coordinates for Open-Meteo
-      adlingtonGeo: { lat: 53.615, lon: -2.602, name: 'Adlington, Lancs' },
-      manchesterGeo: { lat: 53.480, lon: -2.242, name: 'Manchester Piccadilly' },
-    };
+    // Read tokens safely via URL hash: #rail=TOKEN&calendar=TOKEN&calId=ID
+    const hash = new URLSearchParams(window.location.hash.substring(1));
+    const NRE_TOKEN = hash.get('rail') || "YOUR_DARWIN_TOKEN";
+    const GOOGLE_KEY = hash.get('calendar');
+    const CAL_ID = hash.get('calId');
 
-    let countdownSeconds = CONFIG.refreshIntervalSec;
-    let refreshTimer = null;
-    let clockTimer = null;
-    let simulatedDelayMode = false;
-    let currentEventFilter = 'today';
-
-    /* -------------------------------------------------------------
-       MANCHESTER EVENTS & FIXTURES DATABASE (SAMPLE & USER-CUSTOMIZABLE)
-       Covers: Manchester United, Manchester City, Co-op Live, AO Arena
-    ------------------------------------------------------------- */
-    const DEFAULT_EVENTS = [
-      {
-        id: 'evt-1',
-        title: 'Man Utd vs Liverpool',
-        venue: 'Old Trafford',
-        category: 'football',
-        date: 'today', // or YYYY-MM-DD
-        time: '15:00 KO',
-        crowd: '~74,000 Fans',
-        impact: 'HIGH',
-        advice: 'Altrincham tram line & Piccadilly interchange heavily packed 13:00 - 19:30'
-      },
-      {
-        id: 'evt-2',
-        title: 'Coldplay: Music of the Spheres',
-        venue: 'Co-op Live',
-        category: 'music',
-        date: 'today',
-        time: '19:30 Doors',
-        crowd: '~23,500 Fans',
-        impact: 'HIGH',
-        advice: 'Etihad Campus tram link congested from 17:30. Northern services out of Picc busy after 22:30.'
-      },
-      {
-        id: 'evt-3',
-        title: 'Disney On Ice Matinee & Evening',
-        venue: 'AO Arena',
-        category: 'arena',
-        date: 'upcoming',
-        displayDay: 'Tomorrow',
-        time: '14:30 & 18:30',
-        crowd: '~14,000 Fans',
-        impact: 'MEDIUM',
-        advice: 'Manchester Victoria station will see elevated family footfall.'
-      },
-      {
-        id: 'evt-4',
-        title: 'Man City vs Arsenal',
-        venue: 'Etihad Stadium',
-        category: 'football',
-        date: 'upcoming',
-        displayDay: 'Saturday',
-        time: '17:30 KO',
-        crowd: '~53,400 Fans',
-        impact: 'HIGH',
-        advice: 'Ashton-under-Lyne Metrolink & Piccadilly approaches backed up early evening.'
-      },
-      {
-        id: 'evt-5',
-        title: 'Peter Kay Live Tour',
-        venue: 'AO Arena',
-        category: 'comedy',
-        date: 'upcoming',
-        displayDay: 'Friday',
-        time: '20:00 Show',
-        crowd: '~21,000 Fans',
-        impact: 'HIGH',
-        advice: 'Heavy congestion around Hunts Bank & Victoria station from 18:00.'
-      }
-    ];
-
-    let eventsData = JSON.parse(localStorage.getItem('mcr_events_cache')) || DEFAULT_EVENTS;
-
-    /* -------------------------------------------------------------
-       WMO WEATHER CODES MAPPER
-    ------------------------------------------------------------- */
-    function interpretWmoCode(code) {
-      // WMO Weather interpretation codes (WW)
-      const codes = {
-        0: { desc: 'Clear Sky', icon: 'sun', coat: 'No coat needed' },
-        1: { desc: 'Mainly Clear', icon: 'sun-medium', coat: 'Light layers' },
-        2: { desc: 'Partly Cloudy', icon: 'cloud-sun', coat: 'Comfortable' },
-        3: { desc: 'Overcast', icon: 'cloud', coat: 'Light jacket' },
-        45: { desc: 'Foggy / Mist', icon: 'cloud-fog', coat: 'Warm coat' },
-        48: { desc: 'Depositing Rime Fog', icon: 'cloud-fog', coat: 'Warm coat' },
-        51: { desc: 'Light Drizzle', icon: 'cloud-drizzle', coat: 'Waterproof needed' },
-        53: { desc: 'Moderate Drizzle', icon: 'cloud-drizzle', coat: 'Brolly needed' },
-        55: { desc: 'Dense Drizzle', icon: 'cloud-rain', coat: 'Brolly needed' },
-        61: { desc: 'Slight Rain', icon: 'cloud-rain', coat: 'Brolly needed' },
-        63: { desc: 'Moderate Rain', icon: 'cloud-rain', coat: 'Heavy waterproof' },
-        65: { desc: 'Heavy Rain', icon: 'cloud-rain-wind', coat: 'Full waterproofs' },
-        71: { desc: 'Slight Snow', icon: 'snowflake', coat: 'Winter coat & hat' },
-        73: { desc: 'Moderate Snow', icon: 'snowflake', coat: 'Heavy winter coat' },
-        75: { desc: 'Heavy Snow', icon: 'snowflake', coat: 'Thermal coat' },
-        80: { desc: 'Rain Showers', icon: 'cloud-rain', coat: 'Pack an umbrella' },
-        81: { desc: 'Moderate Showers', icon: 'cloud-rain', coat: 'Pack an umbrella' },
-        82: { desc: 'Violent Showers', icon: 'cloud-lightning', coat: 'Full storm coat' },
-        95: { desc: 'Thunderstorm', icon: 'cloud-lightning', coat: 'Stay dry!' },
-      };
-      return codes[code] || { desc: 'Scattered Clouds', icon: 'cloud', coat: 'Sensible jacket' };
-    }
-
-    /* -------------------------------------------------------------
-       INITIALIZATION
-    ------------------------------------------------------------- */
-    window.addEventListener('DOMContentLoaded', () => {
-      startClock();
-      renderEvents();
-      fetchDashboardData();
-      startCountdownTimer();
-    });
-
-    /* -------------------------------------------------------------
-       CLOCK & GREETING
-    ------------------------------------------------------------- */
-    function startClock() {
-      function update() {
-        const now = new Date();
-        const hours = String(now.getHours()).padStart(2, '0');
-        const minutes = String(now.getMinutes()).padStart(2, '0');
-        const ampm = now.getHours() >= 12 ? 'PM' : 'AM';
-
-        document.getElementById('liveClock').innerHTML = `${hours}:${minutes}<span class="text-lg text-slate-400 font-light"> ${ampm}</span>`;
-        
-        const options = { weekday: 'long', day: 'numeric', month: 'long' };
-        document.getElementById('liveDate').innerText = now.toLocaleDateString('en-GB', options);
-
-        // Dynamic greeting
-        const hr = now.getHours();
-        let greeting = 'Good Evening';
-        if (hr < 12) greeting = 'Good Morning';
-        else if (hr < 17) greeting = 'Good Afternoon';
-        document.getElementById('greetingText').innerText = `${greeting}, Adlington Commuter`;
-      }
-      update();
-      clockTimer = setInterval(update, 1000);
-    }
-
-    /* -------------------------------------------------------------
-       FETCH ALL DATA (WEATHER + TRAINS)
-    ------------------------------------------------------------- */
-    async function fetchDashboardData() {
-      const refreshIcon = document.getElementById('refreshIcon');
-      if (refreshIcon) refreshIcon.classList.add('animate-spin');
-
-      try {
-        await Promise.allSettled([
-          fetchAdlingtonWeather(),
-          fetchManchesterWeather(),
-          fetchLiveTrains()
-        ]);
-        updateCommuteSummary();
-      } catch (err) {
-        console.error('Data fetch error:', err);
-      } finally {
-        setTimeout(() => {
-          if (refreshIcon) refreshIcon.classList.remove('animate-spin');
-          lucide.createIcons();
-        }, 400);
-      }
-    }
-
-    /* -------------------------------------------------------------
-       WEATHER FETCH 1: ADLINGTON (HOME)
-    ------------------------------------------------------------- */
-    async function fetchAdlingtonWeather() {
-      const { lat, lon } = CONFIG.adlingtonGeo;
-      const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&wind_speed_unit=mph&timezone=Europe%2FLondon`;
-      
-      try {
-        const res = await fetch(url);
-        if (!res.ok) throw new Error('Open-Meteo offline');
-        const data = await res.json();
-        
-        const current = data.current;
-        const daily = data.daily;
-        const wmo = interpretWmoCode(current.weather_code);
-
-        document.getElementById('adlTemp').innerText = Math.round(current.temperature_2m);
-        document.getElementById('adlFeelsLike').innerText = `${Math.round(current.apparent_temperature)}°C`;
-        document.getElementById('adlCondition').innerText = wmo.desc;
-        document.getElementById('adlHighLow').innerText = `${Math.round(daily.temperature_2m_max[0])}° / ${Math.round(daily.temperature_2m_min[0])}°`;
-        document.getElementById('adlPrecipChance').innerText = `${daily.precipitation_probability_max[0] || 0}%`;
-        document.getElementById('adlWind').innerText = `${Math.round(current.wind_speed_10m)} mph`;
-        document.getElementById('adlCoatAdvice').innerText = wmo.coat;
-
-        // Update icon
-        document.getElementById('adlWeatherIcon').innerHTML = `<i data-lucide="${wmo.icon}" class="w-8 h-8"></i>`;
-      } catch (e) {
-        console.warn('Adlington weather fetch fallback', e);
-        document.getElementById('adlTemp').innerText = '12';
-        document.getElementById('adlFeelsLike').innerText = '10°C';
-        document.getElementById('adlCondition').innerText = 'Light Drizzle';
-        document.getElementById('adlHighLow').innerText = '14° / 8°';
-        document.getElementById('adlPrecipChance').innerText = '65%';
-        document.getElementById('adlWind').innerText = '11 mph';
-        document.getElementById('adlCoatAdvice').innerText = 'Brolly needed';
-      }
-    }
-
-    /* -------------------------------------------------------------
-       WEATHER FETCH 2: MANCHESTER (DESTINATION)
-    ------------------------------------------------------------- */
-    async function fetchManchesterWeather() {
-      const { lat, lon } = CONFIG.manchesterGeo;
-      const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max&wind_speed_unit=mph&timezone=Europe%2FLondon`;
-      
-      try {
-        const res = await fetch(url);
-        if (!res.ok) throw new Error('Open-Meteo offline');
-        const data = await res.json();
-        
-        const current = data.current;
-        const daily = data.daily;
-        const wmo = interpretWmoCode(current.weather_code);
-
-        document.getElementById('manTemp').innerText = Math.round(current.temperature_2m);
-        document.getElementById('manFeelsLike').innerText = `${Math.round(current.apparent_temperature)}°C`;
-        document.getElementById('manCondition').innerText = wmo.desc;
-        document.getElementById('manHighLow').innerText = `${Math.round(daily.temperature_2m_max[0])}° / ${Math.round(daily.temperature_2m_min[0])}°`;
-        document.getElementById('manPrecipChance').innerText = `${daily.precipitation_probability_max[0] || 0}%`;
-        document.getElementById('manWind').innerText = `${Math.round(current.wind_speed_10m)} mph`;
-
-        // Update icon
-        document.getElementById('manWeatherIcon').innerHTML = `<i data-lucide="${wmo.icon}" class="w-8 h-8"></i>`;
-      } catch (e) {
-        console.warn('Manchester weather fetch fallback', e);
-        document.getElementById('manTemp').innerText = '13';
-        document.getElementById('manFeelsLike').innerText = '11°C';
-        document.getElementById('manCondition').innerText = 'Overcast';
-        document.getElementById('manHighLow').innerText = '15° / 9°';
-        document.getElementById('manPrecipChance').innerText = '40%';
-        document.getElementById('manWind').innerText = '13 mph';
-      }
-    }
-
-    /* -------------------------------------------------------------
-       HUXLEY 2 NATIONAL RAIL TRAIN DEPARTURES
-       Source: Adlington (Lancs) [ADL] -> Manchester Piccadilly [MAN]
-    ------------------------------------------------------------- */
-    async function fetchLiveTrains() {
-      const container = document.getElementById('trainListContainer');
-      const sourceTag = document.getElementById('railSourceTag');
-      
-      if (simulatedDelayMode) {
-        renderTrainServices(getSimulatedTrains(true));
-        sourceTag.innerText = "Simulation Mode (Test)";
-        sourceTag.className = "text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30";
-        return;
-      }
-
-      // Prepare Huxley URL
-      let tokenParam = CONFIG.huxleyToken ? `?accessToken=${encodeURIComponent(CONFIG.huxleyToken)}` : '';
-      const endpoint = `${CONFIG.huxleyBaseUrl}/departures/${CONFIG.fromStation}/to/${CONFIG.toStation}${tokenParam}`;
-
-      try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 6000); // 6s timeout
-
-        const res = await fetch(endpoint, { signal: controller.signal });
-        clearTimeout(timeoutId);
-
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-
-        if (data && data.trainServices && data.trainServices.length > 0) {
-          sourceTag.innerText = "Live Huxley 2 (Darwin)";
-          sourceTag.className = "text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30";
-          renderTrainServices(formatHuxleyData(data.trainServices));
-        } else {
-          // If no direct services returned in the immediate window, fallback to realistic schedule
-          console.log('No direct Huxley train services in exact window; loading real scheduled roster');
-          renderTrainServices(getSimulatedTrains(false));
-          sourceTag.innerText = "Live Timetable (Darwin Fallback)";
-          sourceTag.className = "text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-500/30";
-        }
-      } catch (err) {
-        console.warn('Huxley API unreachable or blocked by CORS. Using robust simulated roster for ADL->MAN.', err);
-        sourceTag.innerText = "Simulated Real-Time";
-        sourceTag.className = "text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-slate-500/20 text-slate-300 border border-slate-500/30";
-        renderTrainServices(getSimulatedTrains(false));
-      }
-    }
-
-    function formatHuxleyData(services) {
-      return services.slice(0, 4).map(s => {
-        const dest = (s.destination && s.destination[0] && s.destination[0].locationName) || 'Manchester Piccadilly';
-        const isOntime = s.etd === 'On time';
-        const isCancelled = s.isCancelled || s.etd === 'Cancelled';
-        
-        let statusClass = 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30';
-        let statusText = s.etd || 'On time';
-        
-        if (isCancelled) {
-          statusClass = 'text-rose-400 bg-rose-500/10 border-rose-500/30';
-          statusText = 'Cancelled';
-        } else if (!isOntime) {
-          statusClass = 'text-amber-400 bg-amber-500/10 border-amber-500/30';
-          statusText = `Exp ${s.etd}`;
-        }
-
-        return {
-          std: s.std || '--:--',
-          etd: statusText,
-          statusBadge: statusClass,
-          destination: dest,
-          platform: s.platform || '2',
-          operator: s.operator || 'Northern',
-          delayReason: s.delayReason || (isCancelled ? s.cancelReason : null)
-        };
-      });
-    }
-
-    // Dynamic generator of realistic Adlington->Manchester Piccadilly timetable
-    function getSimulatedTrains(injectDelay = false) {
+    function updateTime() {
       const now = new Date();
-      const currentH = now.getHours();
-      const currentM = now.getMinutes();
+      document.getElementById('clock').innerText = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+      document.getElementById('date-label').innerText = now.toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short' });
+    }
+    setInterval(updateTime, 1000);
+    updateTime();
 
-      // Northern services from Adlington to Manchester typically run approx every ~30-60 mins during morning/day
-      const offsetMinutes = [8, 38, 72, 108];
+    // 1. Weather fetching (Open-Meteo)
+    async function fetchWeather() {
+      try {
+        // Adlington: 53.6145, -2.6015
+        const adlRes = await fetch("https://api.open-meteo.com/v1/forecast?latitude=53.6145&longitude=-2.6015&current=temperature_2m,precipitation_probability");
+        const adl = await adlRes.json();
+        document.getElementById('adl-temp').innerText = `${Math.round(adl.current.temperature_2m)}°`;
+        document.getElementById('adl-rain').innerText = `Rain: ${adl.current.precipitation_probability ?? 0}%`;
 
-      return offsetMinutes.map((offset, idx) => {
-        const depTime = new Date(now.getTime() + offset * 60000);
-        const std = `${String(depTime.getHours()).padStart(2, '0')}:${String(depTime.getMinutes()).padStart(2, '0')}`;
+        // Manchester: 53.4774, -2.2309 (Hourly for the 15:00-17:00 walk window)
+        const manRes = await fetch("https://api.open-meteo.com/v1/forecast?latitude=53.4774&longitude=-2.2309&current=temperature_2m,precipitation_probability&hourly=temperature_2m,precipitation_probability,weather_code&forecast_days=1");
+        const man = await manRes.json();
         
-        let etd = 'On time';
-        let statusBadge = 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30';
-        let delayReason = null;
+        document.getElementById('man-temp').innerText = `${Math.round(man.current.temperature_2m)}°`;
+        document.getElementById('man-rain').innerText = `Rain: ${man.current.precipitation_probability ?? 0}%`;
 
-        if (injectDelay && idx === 1) {
-          etd = 'Exp +9m';
-          statusBadge = 'text-amber-400 bg-amber-500/10 border-amber-500/30';
-          delayReason = 'Delayed by a speed restriction between Preston and Chorley';
-        } else if (injectDelay && idx === 3) {
-          etd = 'Cancelled';
-          statusBadge = 'text-rose-400 bg-rose-500/10 border-rose-500/30';
-          delayReason = 'Train crew availability issue';
+        // Isolate 15:00, 16:00, 17:00 index from hourly arrays
+        const hours = man.hourly.time.map(t => new Date(t).getHours());
+        const targetIndices = hours.reduce((acc, h, i) => (h >= 15 && h <= 17) ? [...acc, i] : acc, []);
+
+        if (targetIndices.length > 0) {
+          const temps = targetIndices.map(i => man.hourly.temperature_2m[i]);
+          const rains = targetIndices.map(i => man.hourly.precipitation_probability[i]);
+          
+          const avgTemp = Math.round(temps.reduce((a, b) => a + b, 0) / temps.length);
+          const maxRain = Math.max(...rains);
+
+          document.getElementById('walk-temp').innerText = `${avgTemp}°`;
+          document.getElementById('walk-rain').innerText = `Rain: ${maxRain}%`;
+          document.getElementById('walk-summary').innerText = maxRain > 30 ? 'Rain risk' : 'Likely dry';
         }
-
-        return {
-          std: std,
-          etd: etd,
-          statusBadge: statusBadge,
-          destination: 'Manchester Piccadilly',
-          platform: '2',
-          operator: 'Northern',
-          delayReason: delayReason
-        };
-      });
+      } catch (e) {
+        console.error("Weather error:", e);
+      }
     }
 
-    function renderTrainServices(trains) {
-      const container = document.getElementById('trainListContainer');
-      if (!trains || trains.length === 0) {
-        container.innerHTML = `
-          <div class="p-8 text-center text-slate-400 bg-slate-900/50 rounded-2xl border border-white/5">
-            <i data-lucide="alert-circle" class="w-8 h-8 text-amber-400 mx-auto mb-2"></i>
-            <p class="font-medium text-slate-300">No scheduled departures found in next 2 hours</p>
-            <p class="text-xs text-slate-400 mt-1">Check again shortly or view National Rail Enquiries app</p>
-          </div>
-        `;
-        lucide.createIcons();
+    // 2. Render helper for trains
+    function renderTrains(containerId, services) {
+      const container = document.getElementById(containerId);
+      if (!services || services.length === 0) {
+        container.innerHTML = `<div class="empty">No services scheduled in this window.</div>`;
         return;
       }
 
-      container.innerHTML = trains.map((t, index) => {
-        const isNext = index === 0;
+      container.innerHTML = services.map(s => {
+        const isCancelled = s.isCancelled || s.etd === "Cancelled";
+        const isDelayed = s.etd && s.etd !== "On time" && !isCancelled;
+        const statusClass = isCancelled ? 'cancelled' : (isDelayed ? 'delayed' : 'on-time');
+        const statusText = isCancelled ? 'Cancelled' : (s.etd || 'On time');
+        
+        // Coach count scraping from Darwin length property
+        const coaches = s.length && s.length > 0 ? `${s.length} cars` : 'Length --';
+        const platform = s.platform ? `Plat ${s.platform}` : 'Plat TBD';
+
         return `
-          <div class="p-3.5 rounded-2xl ${isNext ? 'bg-gradient-to-r from-slate-900 via-slate-850 to-slate-900 border-sky-500/30 shadow-md' : 'bg-slate-900/60 border-white/5'} border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 transition hover:border-white/20">
-            
-            <div class="flex items-center gap-3.5">
-              <!-- Scheduled Time Box -->
-              <div class="text-center px-3 py-1.5 rounded-xl bg-slate-950/80 border border-white/10 shrink-0">
-                <span class="font-mono text-xl font-extrabold text-white tracking-tight">${t.std}</span>
-                <span class="block text-[10px] text-slate-400 uppercase font-semibold">Departs</span>
-              </div>
-
-              <!-- Destination & Platform -->
-              <div>
-                <div class="flex items-center gap-2">
-                  <span class="font-bold text-slate-100 text-sm sm:text-base">${t.destination}</span>
-                  ${isNext ? '<span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-400 border border-sky-500/30">Next Up</span>' : ''}
-                </div>
-                <div class="flex items-center gap-3 text-xs text-slate-400 mt-0.5">
-                  <span class="flex items-center gap-1 font-mono text-amber-300 font-semibold">
-                    <i data-lucide="map-pin" class="w-3 h-3 text-amber-400"></i> Plat ${t.platform}
-                  </span>
-                  <span>•</span>
-                  <span>${t.operator}</span>
-                  <span>•</span>
-                  <span>Direct (~42m)</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- Status Indicator & Delay Notes -->
-            <div class="flex flex-col sm:items-end w-full sm:w-auto">
-              <span class="px-3 py-1 rounded-xl text-xs font-bold border ${t.statusBadge} inline-flex items-center gap-1.5 self-start sm:self-auto font-mono">
-                ${t.etd === 'On time' ? '<i data-lucide="check-circle" class="w-3.5 h-3.5"></i>' : (t.etd === 'Cancelled' ? '<i data-lucide="x-circle" class="w-3.5 h-3.5"></i>' : '<i data-lucide="clock" class="w-3.5 h-3.5"></i>')}
-                ${t.etd}
+          <div class="train-card">
+            <div class="time-slot">
+              <span class="dep-time">${s.std}</span>
+              <span class="meta">
+                <span>${platform}</span>
+                <span>&bull;</span>
+                <span class="coaches">${coaches}</span>
               </span>
-              ${t.delayReason ? `<span class="text-[11px] text-amber-300 mt-1 max-w-xs text-left sm:text-right truncate font-medium" title="${t.delayReason}"><i data-lucide="alert-triangle" class="w-3 h-3 inline mr-1"></i>${t.delayReason}</span>` : ''}
             </div>
-
+            <div class="status-slot">
+              <span class="status-badge ${statusClass}">${statusText}</span>
+            </div>
           </div>
         `;
       }).join('');
-
-      lucide.createIcons();
     }
 
-    /* -------------------------------------------------------------
-       MANCHESTER EVENTS & CROWD RADAR RENDERER
-    ------------------------------------------------------------- */
-    function renderEvents() {
-      const container = document.getElementById('eventsContainer');
-      const filtered = eventsData.filter(e => currentEventFilter === 'today' ? e.date === 'today' : e.date === 'upcoming');
-
-      if (filtered.length === 0) {
-        container.innerHTML = `
-          <div class="col-span-2 p-6 rounded-2xl bg-slate-900/40 border border-white/5 text-center text-slate-400 text-xs">
-            <i data-lucide="sparkles" class="w-5 h-5 text-emerald-400 mx-auto mb-1"></i>
-            No major stadium or arena events flagged for ${currentEventFilter}. City transit lines clear.
-          </div>
-        `;
-        lucide.createIcons();
+    // 3. Train Fetching (Huxley 2 Darwin API)
+    async function fetchTrains() {
+      if (!NRE_TOKEN || NRE_TOKEN === "YOUR_DARWIN_TOKEN") {
+        document.getElementById('outbound-trains').innerHTML = `<div class="empty" style="color:var(--ochre)">Token required in URL hash (#rail=...)</div>`;
+        document.getElementById('return-trains').innerHTML = `<div class="empty" style="color:var(--ochre)">Token required in URL hash (#rail=...)</div>`;
         return;
       }
 
-      container.innerHTML = filtered.map(item => {
-        let impactClass = 'bg-rose-500/10 text-rose-400 border-rose-500/20';
-        let impactIcon = 'flame';
-        if (item.impact === 'MEDIUM') {
-          impactClass = 'bg-amber-500/10 text-amber-400 border-amber-500/20';
-          impactIcon = 'alert-circle';
-        } else if (item.impact === 'LOW') {
-          impactClass = 'bg-sky-500/10 text-sky-400 border-sky-500/20';
-          impactIcon = 'info';
-        }
+      try {
+        // Outbound: Next 3 trains departing ADL -> MAN
+        const outRes = await fetch(`https://huxley2.azurewebsites.net/departures/ADL/to/MAN/10?accessToken=${NRE_TOKEN}`);
+        const outData = await outRes.json();
+        const outbound = (outData.trainServices || []).slice(0, 3);
+        renderTrains('outbound-trains', outbound);
 
-        let venueIcon = 'music';
-        if (item.category === 'football') venueIcon = 'trophy';
-        else if (item.category === 'arena') venueIcon = 'ticket';
+        // Return: MAN -> ADL. Look at full departures, filter for ≥ 16:00
+        const retRes = await fetch(`https://huxley2.azurewebsites.net/departures/MAN/to/ADL/20?accessToken=${NRE_TOKEN}`);
+        const retData = await retRes.json();
+        const allReturns = retData.trainServices || [];
 
-        return `
-          <div class="p-3 rounded-2xl bg-slate-900/60 border border-white/5 hover:border-white/10 transition flex flex-col justify-between">
-            <div>
-              <div class="flex items-center justify-between gap-1 mb-1.5">
-                <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${impactClass} flex items-center gap-1 font-mono">
-                  <i data-lucide="${impactIcon}" class="w-3 h-3"></i> ${item.impact} IMPACT
-                </span>
-                <span class="text-xs font-mono text-slate-400 font-semibold">${item.displayDay || item.time}</span>
-              </div>
-              <h4 class="font-bold text-slate-100 text-sm leading-snug flex items-center gap-1.5">
-                <i data-lucide="${venueIcon}" class="w-3.5 h-3.5 text-sky-400 shrink-0"></i>
-                ${item.title}
-              </h4>
-              <div class="flex items-center gap-2 text-xs text-slate-400 mt-1">
-                <span class="font-medium text-slate-300">${item.venue}</span>
-                <span>•</span>
-                <span class="text-slate-400 font-mono">${item.crowd}</span>
-              </div>
-            </div>
-            <div class="mt-2.5 pt-2 border-t border-white/5 text-[11px] text-amber-300/90 leading-tight">
-              <i data-lucide="compass" class="w-3 h-3 inline mr-1 text-amber-400"></i> ${item.advice}
-            </div>
+        // Filter services scheduled at or after 16:00 (or taking current if already past 16:00)
+        const eveningReturns = allReturns.filter(s => {
+          const [h] = s.std.split(':').map(Number);
+          return h >= 16;
+        }).slice(0, 3);
+
+        renderTrains('return-trains', eveningReturns.length > 0 ? eveningReturns : allReturns.slice(0, 3));
+
+      } catch (err) {
+        console.error("Rail error:", err);
+      }
+    }
+
+    // 4. Disruption & Events
+    async function fetchEvents() {
+      const container = document.getElementById('events-stream');
+      if (!GOOGLE_KEY || !CAL_ID) {
+        // Fallback clear visual state without mock warnings
+        container.innerHTML = `
+          <div class="event-row">
+            <span class="event-time">--:--</span>
+            <span class="event-desc" style="color:var(--text-muted)">Connect calendar or worker via hash to populate live fixtures</span>
+            <span class="event-loc">Old Trafford / Etihad / Arenas</span>
           </div>
         `;
-      }).join('');
-
-      // Update evening pinch point hint in Summary
-      const eveningEvents = eventsData.filter(e => e.date === 'today' && (e.impact === 'HIGH' || e.impact === 'MEDIUM'));
-      const pinchEl = document.getElementById('eveningPinchPoint');
-      const tramCongestionText = document.getElementById('tramCongestionText');
-
-      if (eveningEvents.length > 0) {
-        pinchEl.innerText = `${eveningEvents[0].title} (${eveningEvents[0].venue})`;
-        pinchEl.className = "font-medium text-amber-300";
-        tramCongestionText.innerText = `Busy for ${eveningEvents[0].venue} post 17:00`;
-      } else {
-        pinchEl.innerText = 'No major stadium crowds tonight';
-        pinchEl.className = "font-medium text-emerald-400";
-        tramCongestionText.innerText = 'Standard weekday evening flow';
+        return;
       }
 
-      lucide.createIcons();
-    }
+      const now = new Date();
+      const start = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+      const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59).toISOString();
 
-    function switchEventFilter(filter) {
-      currentEventFilter = filter;
-      document.getElementById('viewTodayBtn').className = filter === 'today' 
-        ? "px-2.5 py-1 rounded-md font-medium text-white bg-slate-800 shadow-sm transition"
-        : "px-2.5 py-1 rounded-md font-medium text-slate-400 hover:text-white transition";
-      
-      document.getElementById('viewUpcomingBtn').className = filter === 'upcoming'
-        ? "px-2.5 py-1 rounded-md font-medium text-white bg-slate-800 shadow-sm transition"
-        : "px-2.5 py-1 rounded-md font-medium text-slate-400 hover:text-white transition";
-      
-      renderEvents();
-    }
+      try {
+        const res = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(CAL_ID)}/events?timeMin=${start}&timeMax=${end}&singleEvents=true&orderBy=startTime&key=${GOOGLE_KEY}`);
+        const data = await res.json();
+        const items = data.items || [];
 
-    /* -------------------------------------------------------------
-       SUMMARY VERDICT CALCULATION
-    ------------------------------------------------------------- */
-    function updateCommuteSummary() {
-      const brollyStatus = document.getElementById('brollyStatus');
-      const adlRainChance = parseInt(document.getElementById('adlPrecipChance').innerText) || 0;
-      const manRainChance = parseInt(document.getElementById('manPrecipChance').innerText) || 0;
-      
-      if (adlRainChance > 40 || manRainChance > 40) {
-        brollyStatus.innerHTML = `<span class="text-sky-300 font-semibold"><i data-lucide="umbrella" class="w-3.5 h-3.5 inline mr-1"></i>Grab an Umbrella (${Math.max(adlRainChance, manRainChance)}% rain)</span>`;
-      } else {
-        brollyStatus.innerHTML = `<span class="text-emerald-400 font-semibold"><i data-lucide="sun" class="w-3.5 h-3.5 inline mr-1"></i>No rain expected for walk</span>`;
-      }
-
-      const verdictBadge = document.getElementById('verdictBadge');
-      if (simulatedDelayMode) {
-        verdictBadge.innerText = 'Delays on Line - Leave Early';
-        verdictBadge.className = 'px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30';
-      } else {
-        verdictBadge.innerText = 'Smooth Journey Expected';
-        verdictBadge.className = 'px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
-      }
-
-      lucide.createIcons();
-    }
-
-    /* -------------------------------------------------------------
-       COUNTDOWN & AUTO REFRESH LOOP (60s)
-    ------------------------------------------------------------- */
-    function startCountdownTimer() {
-      if (refreshTimer) clearInterval(refreshTimer);
-      countdownSeconds = CONFIG.refreshIntervalSec;
-
-      refreshTimer = setInterval(() => {
-        countdownSeconds--;
-        const label = document.getElementById('nextUpdateCountdown');
-        if (label) label.innerText = `Refreshes in ${countdownSeconds}s`;
-
-        if (countdownSeconds <= 0) {
-          countdownSeconds = CONFIG.refreshIntervalSec;
-          fetchDashboardData();
+        if (items.length === 0) {
+          container.innerHTML = `<div class="empty">No major stadium or arena events flagged today. Smooth city travel expected.</div>`;
+          return;
         }
-      }, 1000);
-    }
 
-    function manualRefresh() {
-      countdownSeconds = CONFIG.refreshIntervalSec;
-      fetchDashboardData();
-    }
-
-    /* -------------------------------------------------------------
-       TEST TOGGLE (Simulate delayed / cancelled trains)
-    ------------------------------------------------------------- */
-    function simulateDelayToggle() {
-      simulatedDelayMode = !simulatedDelayMode;
-      fetchLiveTrains();
-      updateCommuteSummary();
-    }
-
-    /* -------------------------------------------------------------
-       MODALS: SETTINGS & ADD EVENT
-    ------------------------------------------------------------- */
-    function toggleSettingsModal(show) {
-      const modal = document.getElementById('settingsModal');
-      if (show) {
-        document.getElementById('cfgHuxleyUrl').value = CONFIG.huxleyBaseUrl;
-        document.getElementById('cfgHuxleyToken').value = CONFIG.huxleyToken;
-        modal.classList.remove('hidden');
-      } else {
-        modal.classList.add('hidden');
+        container.innerHTML = items.map(ev => {
+          const t = ev.start.dateTime ? new Date(ev.start.dateTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'All Day';
+          return `
+            <div class="event-row">
+              <span class="event-time">${t}</span>
+              <span class="event-desc">${ev.summary}</span>
+              <span class="event-loc">${ev.location || 'Manchester'}</span>
+            </div>
+          `;
+        }).join('');
+      } catch (e) {
+        container.innerHTML = `<div class="empty">Unable to check events.</div>`;
       }
     }
 
-    function saveSettings() {
-      const url = document.getElementById('cfgHuxleyUrl').value.trim();
-      const token = document.getElementById('cfgHuxleyToken').value.trim();
-      if (url) {
-        CONFIG.huxleyBaseUrl = url;
-        localStorage.setItem('huxley_url', url);
-      }
-      CONFIG.huxleyToken = token;
-      localStorage.setItem('huxley_token', token);
-      toggleSettingsModal(false);
-      manualRefresh();
-    }
+    // Initial triggers
+    fetchWeather();
+    fetchTrains();
+    fetchEvents();
 
-    function toggleAddEventModal(show) {
-      const modal = document.getElementById('addEventModal');
-      if (show) modal.classList.remove('hidden');
-      else modal.classList.add('hidden');
-    }
-
-    function addCustomEventSubmit() {
-      const title = document.getElementById('newEventTitle').value.trim();
-      const venue = document.getElementById('newEventVenue').value;
-      const time = document.getElementById('newEventTime').value.trim() || '19:00';
-      const impact = document.getElementById('newEventImpact').value;
-
-      if (!title) return;
-
-      const newEvt = {
-        id: 'evt-' + Date.now(),
-        title: title,
-        venue: venue,
-        category: venue.includes('Trafford') || venue.includes('Etihad') ? 'football' : 'music',
-        date: 'today',
-        time: time,
-        crowd: impact === 'HIGH' ? '20k+ Event' : 'General Crowd',
-        impact: impact,
-        advice: `Expect congestion on services to/from ${venue} around start & finish.`
-      };
-
-      eventsData.unshift(newEvt);
-      localStorage.setItem('mcr_events_cache', JSON.stringify(eventsData));
-      renderEvents();
-      toggleAddEventModal(false);
-      document.getElementById('newEventTitle').value = '';
-      document.getElementById('newEventTime').value = '';
-    }
+    // Intervals: 60s for trains, 10m for weather
+    setInterval(fetchTrains, 60000);
+    setInterval(fetchWeather, 600000);
   </script>
 </body>
 </html>
