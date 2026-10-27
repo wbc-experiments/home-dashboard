@@ -48,10 +48,10 @@
       max-width: 960px;
       display: flex;
       flex-direction: column;
-      gap: 3rem;
+      gap: 2.5rem;
     }
 
-    /* Minimal Header */
+    /* Header */
     header {
       display: flex;
       justify-content: space-between;
@@ -110,24 +110,24 @@
       background: var(--border);
     }
 
-    /* Weather Strip */
+    /* Weather 4-Grid */
     .weather-grid {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 1.25rem;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
     }
 
     .weather-tile {
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 12px;
-      padding: 1.25rem;
+      padding: 1.15rem;
       position: relative;
     }
 
     .weather-tile.highlight {
       border-color: rgba(245, 158, 11, 0.25);
-      background: linear-gradient(180deg, var(--surface) 0%, rgba(245, 158, 11, 0.03) 100%);
+      background: linear-gradient(180deg, var(--surface) 0%, rgba(245, 158, 11, 0.04) 100%);
     }
 
     .tile-label {
@@ -137,16 +137,20 @@
       margin-bottom: 0.5rem;
       display: flex;
       justify-content: space-between;
+      align-items: center;
     }
 
     .tile-label .time-tag {
       color: var(--ochre);
       font-family: var(--mono);
       font-size: 0.7rem;
+      background: var(--ochre-glow);
+      padding: 0.1rem 0.35rem;
+      border-radius: 4px;
     }
 
     .tile-temp {
-      font-size: 2.25rem;
+      font-size: 2rem;
       font-weight: 700;
       color: #fff;
       font-family: var(--mono);
@@ -158,19 +162,20 @@
       font-size: 0.8rem;
       color: var(--text-muted);
       display: flex;
-      gap: 0.75rem;
+      justify-content: space-between;
+      align-items: center;
     }
 
     .tile-sub .rain {
       color: var(--ochre);
-      font-weight: 500;
+      font-weight: 600;
     }
 
     /* Rail Section */
     .rail-columns {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 2rem;
+      gap: 1.75rem;
     }
 
     .train-table {
@@ -187,7 +192,6 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      transition: border-color 0.2s;
     }
 
     .train-card:first-child {
@@ -248,7 +252,7 @@
       background: rgba(244, 63, 94, 0.1);
     }
 
-    /* Events Bar */
+    /* Events Stream */
     .events-stream {
       display: flex;
       flex-direction: column;
@@ -291,8 +295,11 @@
       font-style: italic;
     }
 
-    @media (max-width: 768px) {
-      .weather-grid, .rail-columns {
+    @media (max-width: 900px) {
+      .weather-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .rail-columns {
         grid-template-columns: 1fr;
       }
       body {
@@ -305,58 +312,76 @@
 
   <div class="container">
     
-    <!-- Minimal Clock & Status -->
+    <!-- Header -->
     <header>
       <div>
         <div class="clock" id="clock">--:--</div>
         <div class="date" id="date-label">Loading...</div>
       </div>
       <div class="route-indicator">
-        Northern Rail ➔ <span>Adlington ⇄ Piccadilly</span>
+        🚆 Northern Rail ➔ <span>Adlington ⇄ Piccadilly</span> ☕
       </div>
     </header>
 
-    <!-- Weather Trio -->
+    <!-- Weather Windows -->
     <section>
-      <div class="section-title">Weather Conditions</div>
+      <div class="section-title">🌤️ Weather & Walk Windows</div>
       <div class="weather-grid">
+        
+        <!-- Adlington Current -->
         <div class="weather-tile">
-          <div class="tile-label">Adlington (Home)</div>
+          <div class="tile-label">🏡 Adlington (Home)</div>
           <div class="tile-temp" id="adl-temp">--°</div>
           <div class="tile-sub">
             <span class="rain" id="adl-rain">Rain: --%</span>
           </div>
         </div>
 
+        <!-- Manchester Current -->
         <div class="weather-tile">
-          <div class="tile-label">Manchester (Current)</div>
+          <div class="tile-label">🏙️ Manchester (Live)</div>
           <div class="tile-temp" id="man-temp">--°</div>
           <div class="tile-sub">
             <span class="rain" id="man-rain">Rain: --%</span>
           </div>
         </div>
 
+        <!-- Morning Walk: Station -> Office (07:30 - 08:30) -->
         <div class="weather-tile highlight">
           <div class="tile-label">
-            Manchester Walk Window
-            <span class="time-tag">15:00 - 17:00</span>
+            🚶‍♂️ Station ➔ Office
+            <span class="time-tag">07:30 - 08:30</span>
           </div>
-          <div class="tile-temp" id="walk-temp">--°</div>
+          <div class="tile-temp" id="am-walk-temp">--°</div>
           <div class="tile-sub">
-            <span class="rain" id="walk-rain">Rain: --%</span>
-            <span id="walk-summary">Loading...</span>
+            <span class="rain" id="am-walk-rain">Rain: --%</span>
+            <span id="am-walk-icon">--</span>
           </div>
         </div>
+
+        <!-- Evening Walk: Office -> Station (15:30 - 16:30) -->
+        <div class="weather-tile highlight">
+          <div class="tile-label">
+            🏃‍♂️ Office ➔ Station
+            <span class="time-tag">15:30 - 16:30</span>
+          </div>
+          <div class="tile-temp" id="pm-walk-temp">--°</div>
+          <div class="tile-sub">
+            <span class="rain" id="pm-walk-rain">Rain: --%</span>
+            <span id="pm-walk-icon">--</span>
+          </div>
+        </div>
+
       </div>
     </section>
 
-    <!-- Rail Sections (Outbound & Return) -->
+    <!-- Rail Departures -->
     <section>
       <div class="rail-columns">
         
         <!-- Outbound -->
         <div>
-          <div class="section-title">Adlington ➔ Manchester Piccadilly</div>
+          <div class="section-title">⚡ Adlington ➔ Piccadilly (Next 3)</div>
           <div class="train-table" id="outbound-trains">
             <div class="empty">Checking live Darwin board...</div>
           </div>
@@ -364,7 +389,7 @@
 
         <!-- Return -->
         <div>
-          <div class="section-title">Return Trains (Piccadilly ➔ ADL from 16:00)</div>
+          <div class="section-title">🏠 Return Trains (Piccadilly ➔ ADL from 16:00)</div>
           <div class="train-table" id="return-trains">
             <div class="empty">Checking evening schedule...</div>
           </div>
@@ -373,18 +398,18 @@
       </div>
     </section>
 
-    <!-- Disruption & Events -->
+    <!-- City Events -->
     <section>
-      <div class="section-title">City Events & Crowd Radar</div>
+      <div class="section-title">🏟️ Manchester Events & Disruption Radar</div>
       <div class="events-stream" id="events-stream">
-        <div class="empty">Scanning Manchester United, City, Co-op Live & AO Arena...</div>
+        <div class="empty">Scanning Man Utd, Man City, Co-op Live & AO Arena...</div>
       </div>
     </section>
 
   </div>
 
   <script>
-    // Read tokens safely via URL hash: #rail=TOKEN&calendar=TOKEN&calId=ID
+    // URL Hash Config: #rail=TOKEN&calendar=TOKEN&calId=ID
     const hash = new URLSearchParams(window.location.hash.substring(1));
     const NRE_TOKEN = hash.get('rail') || "YOUR_DARWIN_TOKEN";
     const GOOGLE_KEY = hash.get('calendar');
@@ -398,7 +423,25 @@
     setInterval(updateTime, 1000);
     updateTime();
 
-    // 1. Weather fetching (Open-Meteo)
+    // Weather calculation helper for specific hour windows
+    function calculateWindow(hourlyData, startHour, endHour) {
+      const targetIndices = hourlyData.time.reduce((acc, t, i) => {
+        const h = new Date(t).getHours();
+        return (h >= startHour && h <= endHour) ? [...acc, i] : acc;
+      }, []);
+
+      if (targetIndices.length === 0) return { temp: '--', rain: 0, icon: '⛅' };
+
+      const temps = targetIndices.map(i => hourlyData.temperature_2m[i]);
+      const rains = targetIndices.map(i => hourlyData.precipitation_probability[i]);
+      
+      const avgTemp = Math.round(temps.reduce((a, b) => a + b, 0) / temps.length);
+      const maxRain = Math.max(...rains);
+      const icon = maxRain >= 40 ? '🌧️ Wet' : (maxRain >= 20 ? '🌦️ Risk' : '☀️ Dry');
+
+      return { temp: `${avgTemp}°`, rain: `${maxRain}%`, icon };
+    }
+
     async function fetchWeather() {
       try {
         // Adlington: 53.6145, -2.6015
@@ -407,34 +450,30 @@
         document.getElementById('adl-temp').innerText = `${Math.round(adl.current.temperature_2m)}°`;
         document.getElementById('adl-rain').innerText = `Rain: ${adl.current.precipitation_probability ?? 0}%`;
 
-        // Manchester: 53.4774, -2.2309 (Hourly for the 15:00-17:00 walk window)
-        const manRes = await fetch("https://api.open-meteo.com/v1/forecast?latitude=53.4774&longitude=-2.2309&current=temperature_2m,precipitation_probability&hourly=temperature_2m,precipitation_probability,weather_code&forecast_days=1");
+        // Manchester Piccadilly: 53.4774, -2.2309 (Hourly breakdown)
+        const manRes = await fetch("https://api.open-meteo.com/v1/forecast?latitude=53.4774&longitude=-2.2309&current=temperature_2m,precipitation_probability&hourly=temperature_2m,precipitation_probability&forecast_days=1");
         const man = await manRes.json();
         
         document.getElementById('man-temp').innerText = `${Math.round(man.current.temperature_2m)}°`;
         document.getElementById('man-rain').innerText = `Rain: ${man.current.precipitation_probability ?? 0}%`;
 
-        // Isolate 15:00, 16:00, 17:00 index from hourly arrays
-        const hours = man.hourly.time.map(t => new Date(t).getHours());
-        const targetIndices = hours.reduce((acc, h, i) => (h >= 15 && h <= 17) ? [...acc, i] : acc, []);
+        // Morning commute window: 07:30 - 08:30 (evaluating 7h and 8h blocks)
+        const amWalk = calculateWindow(man.hourly, 7, 8);
+        document.getElementById('am-walk-temp').innerText = amWalk.temp;
+        document.getElementById('am-walk-rain').innerText = `Rain: ${amWalk.rain}`;
+        document.getElementById('am-walk-icon').innerText = amWalk.icon;
 
-        if (targetIndices.length > 0) {
-          const temps = targetIndices.map(i => man.hourly.temperature_2m[i]);
-          const rains = targetIndices.map(i => man.hourly.precipitation_probability[i]);
-          
-          const avgTemp = Math.round(temps.reduce((a, b) => a + b, 0) / temps.length);
-          const maxRain = Math.max(...rains);
+        // Evening commute window: 15:30 - 16:30 (evaluating 15h and 16h blocks)
+        const pmWalk = calculateWindow(man.hourly, 15, 16);
+        document.getElementById('pm-walk-temp').innerText = pmWalk.temp;
+        document.getElementById('pm-walk-rain').innerText = `Rain: ${pmWalk.rain}`;
+        document.getElementById('pm-walk-icon').innerText = pmWalk.icon;
 
-          document.getElementById('walk-temp').innerText = `${avgTemp}°`;
-          document.getElementById('walk-rain').innerText = `Rain: ${maxRain}%`;
-          document.getElementById('walk-summary').innerText = maxRain > 30 ? 'Rain risk' : 'Likely dry';
-        }
       } catch (e) {
         console.error("Weather error:", e);
       }
     }
 
-    // 2. Render helper for trains
     function renderTrains(containerId, services) {
       const container = document.getElementById(containerId);
       if (!services || services.length === 0) {
@@ -448,8 +487,7 @@
         const statusClass = isCancelled ? 'cancelled' : (isDelayed ? 'delayed' : 'on-time');
         const statusText = isCancelled ? 'Cancelled' : (s.etd || 'On time');
         
-        // Coach count scraping from Darwin length property
-        const coaches = s.length && s.length > 0 ? `${s.length} cars` : 'Length --';
+        const coaches = s.length && s.length > 0 ? `🚃 ${s.length} cars` : '🚃 Length --';
         const platform = s.platform ? `Plat ${s.platform}` : 'Plat TBD';
 
         return `
@@ -470,7 +508,6 @@
       }).join('');
     }
 
-    // 3. Train Fetching (Huxley 2 Darwin API)
     async function fetchTrains() {
       if (!NRE_TOKEN || NRE_TOKEN === "YOUR_DARWIN_TOKEN") {
         document.getElementById('outbound-trains').innerHTML = `<div class="empty" style="color:var(--ochre)">Token required in URL hash (#rail=...)</div>`;
@@ -479,18 +516,17 @@
       }
 
       try {
-        // Outbound: Next 3 trains departing ADL -> MAN
+        // Outbound: Next 3 trains ADL -> MAN
         const outRes = await fetch(`https://huxley2.azurewebsites.net/departures/ADL/to/MAN/10?accessToken=${NRE_TOKEN}`);
         const outData = await outRes.json();
         const outbound = (outData.trainServices || []).slice(0, 3);
         renderTrains('outbound-trains', outbound);
 
-        // Return: MAN -> ADL. Look at full departures, filter for ≥ 16:00
+        // Return: MAN -> ADL from 16:00
         const retRes = await fetch(`https://huxley2.azurewebsites.net/departures/MAN/to/ADL/20?accessToken=${NRE_TOKEN}`);
         const retData = await retRes.json();
         const allReturns = retData.trainServices || [];
 
-        // Filter services scheduled at or after 16:00 (or taking current if already past 16:00)
         const eveningReturns = allReturns.filter(s => {
           const [h] = s.std.split(':').map(Number);
           return h >= 16;
@@ -503,16 +539,14 @@
       }
     }
 
-    // 4. Disruption & Events
     async function fetchEvents() {
       const container = document.getElementById('events-stream');
       if (!GOOGLE_KEY || !CAL_ID) {
-        // Fallback clear visual state without mock warnings
         container.innerHTML = `
           <div class="event-row">
             <span class="event-time">--:--</span>
-            <span class="event-desc" style="color:var(--text-muted)">Connect calendar or worker via hash to populate live fixtures</span>
-            <span class="event-loc">Old Trafford / Etihad / Arenas</span>
+            <span class="event-desc" style="color:var(--text-muted)">Connect calendar or worker via hash to view live arena/match events</span>
+            <span class="event-loc">Etihad / Old Trafford / AO / Co-op Live</span>
           </div>
         `;
         return;
@@ -528,7 +562,7 @@
         const items = data.items || [];
 
         if (items.length === 0) {
-          container.innerHTML = `<div class="empty">No major stadium or arena events flagged today. Smooth city travel expected.</div>`;
+          container.innerHTML = `<div class="empty">✅ No major stadium or arena events flagged today. Normal city travel.</div>`;
           return;
         }
 
@@ -537,7 +571,7 @@
           return `
             <div class="event-row">
               <span class="event-time">${t}</span>
-              <span class="event-desc">${ev.summary}</span>
+              <span class="event-desc">⚽/🎤 ${ev.summary}</span>
               <span class="event-loc">${ev.location || 'Manchester'}</span>
             </div>
           `;
@@ -547,12 +581,10 @@
       }
     }
 
-    // Initial triggers
     fetchWeather();
     fetchTrains();
     fetchEvents();
 
-    // Intervals: 60s for trains, 10m for weather
     setInterval(fetchTrains, 60000);
     setInterval(fetchWeather, 600000);
   </script>
