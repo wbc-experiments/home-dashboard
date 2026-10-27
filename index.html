@@ -517,13 +517,13 @@
 
       try {
         // Outbound: Next 3 trains ADL -> MAN
-        const outRes = await fetch(`https://huxley2.azurewebsites.net/departures/ADL/to/MAN/10?accessToken=${NRE_TOKEN}`);
+        const outRes = await fetch(`https://corsproxy.io/?url=${encodeURIComponent(`https://huxley2.azurewebsites.net/departures/ADL/to/MAN/10?accessToken=${NRE_TOKEN}`)}`);
         const outData = await outRes.json();
         const outbound = (outData.trainServices || []).slice(0, 3);
         renderTrains('outbound-trains', outbound);
 
         // Return: MAN -> ADL from 16:00
-        const retRes = await fetch(`https://huxley2.azurewebsites.net/departures/MAN/to/ADL/20?accessToken=${NRE_TOKEN}`);
+        const retRes = await fetch(`https://corsproxy.io/?url=${encodeURIComponent(`https://huxley2.azurewebsites.net/departures/MAN/to/ADL/20?accessToken=${NRE_TOKEN}`)}`);
         const retData = await retRes.json();
         const allReturns = retData.trainServices || [];
 
