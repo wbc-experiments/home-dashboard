@@ -269,23 +269,49 @@
       border-radius: 8px;
     }
 
+    .event-tag {
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      padding: 0.15rem 0.45rem;
+      border-radius: 4px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      white-space: nowrap;
+    }
+
+    .event-tag.today {
+      background: var(--ochre-glow);
+      color: var(--ochre-bright);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+
+    .event-tag.tomorrow {
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+    }
+
     .event-time {
       font-family: var(--mono);
-      font-size: 0.85rem;
-      color: var(--ochre);
+      font-size: 0.9rem;
+      color: #fff;
       font-weight: 600;
-      min-width: 55px;
+      min-width: 50px;
     }
 
     .event-desc {
       font-size: 0.9rem;
       font-weight: 500;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .event-loc {
       color: var(--text-dim);
       font-size: 0.8rem;
       margin-left: auto;
+      white-space: nowrap;
     }
 
     .empty {
@@ -400,7 +426,7 @@
 
     <!-- City Events -->
     <section>
-      <div class="section-title">🏟️ Manchester Events & Disruption Radar</div>
+      <div class="section-title">🏟️ Manchester Events & Disruption Radar (Today & Tomorrow)</div>
       <div class="events-stream" id="events-stream">
         <div class="empty">Scanning Man Utd, Man City, Co-op Live & AO Arena...</div>
       </div>
@@ -409,12 +435,19 @@
   </div>
 
   <script>
-    // URL Hash Config: #app_id=YOUR_ID&app_key=YOUR_KEY&calendar=TOKEN&calId=ID
+    // Unified URL Hash Reader: #app_id=...&app_key=...&tm_key=...
     const hash = new URLSearchParams(window.location.hash.substring(1));
     const APP_ID = (hash.get('app_id') || '').trim();
     const APP_KEY = (hash.get('app_key') || '').trim();
-    const GOOGLE_KEY = (hash.get('calendar') || '').trim();
-    const CAL_ID = (hash.get('calId') || '').trim();
+    const TM_KEY = (hash.get('tm_key') || '').trim();
+
+    // Venue IDs: AO Arena, Co-op Live, Old Trafford (Man Utd), Etihad Stadium (Man City)
+    const MANCHESTER_VENUES = [
+      'KovZpZAJa1aA', // AO Arena
+      'KovZ917AAwH',  // Co-op Live
+      'KovZpZAEk7AA', // Old Trafford
+      'KovZpZAEkn1A'  // Etihad Stadium
+    ].join(',');
 
     function updateTime() {
       const now = new Date();
@@ -424,7 +457,7 @@
     setInterval(updateTime, 1000);
     updateTime();
 
-    // 1. Weather calculation helper for specific hour windows
+    // 1. Weather calculation helper
     function calculateWindow(hourlyData, startHour, endHour) {
       const targetIndices = hourlyData.time.reduce((acc, t, i) => {
         const h = new Date(t).getHours();
@@ -451,20 +484,20 @@
         document.getElementById('adl-temp').innerText = `${Math.round(adl.current.temperature_2m)}°`;
         document.getElementById('adl-rain').innerText = `Rain: ${adl.current.precipitation_probability ?? 0}%`;
 
-        // Manchester Piccadilly: 53.4774, -2.2309 (Hourly breakdown)
+        // Manchester Piccadilly: 53.4774, -2.2309
         const manRes = await fetch("https://api.open-meteo.com/v1/forecast?latitude=53.4774&longitude=-2.2309&current=temperature_2m,precipitation_probability&hourly=temperature_2m,precipitation_probability&forecast_days=1");
         const man = await manRes.json();
         
         document.getElementById('man-temp').innerText = `${Math.round(man.current.temperature_2m)}°`;
         document.getElementById('man-rain').innerText = `Rain: ${man.current.precipitation_probability ?? 0}%`;
 
-        // Morning commute window: 07:30 - 08:30
+        // Morning commute walk (07:30 - 08:30)
         const amWalk = calculateWindow(man.hourly, 7, 8);
         document.getElementById('am-walk-temp').innerText = amWalk.temp;
         document.getElementById('am-walk-rain').innerText = `Rain: ${amWalk.rain}`;
         document.getElementById('am-walk-icon').innerText = amWalk.icon;
 
-        // Evening commute window: 15:30 - 16:30
+        // Evening commute walk (15:30 - 16:30)
         const pmWalk = calculateWindow(man.hourly, 15, 16);
         document.getElementById('pm-walk-temp').innerText = pmWalk.temp;
         document.getElementById('pm-walk-rain').innerText = `Rain: ${pmWalk.rain}`;
@@ -510,11 +543,11 @@
       }).join('');
     }
 
-    // 3. Train Fetching via TransportAPI (Direct CORS support)
+    // 3. Train Fetching via TransportAPI
     async function fetchTrains() {
       if (!APP_ID || !APP_KEY) {
-        document.getElementById('outbound-trains').innerHTML = `<div class="empty" style="color:var(--ochre)">API key required in URL hash (#app_id=...&app_key=...)</div>`;
-        document.getElementById('return-trains').innerHTML = `<div class="empty" style="color:var(--ochre)">API key required in URL hash (#app_id=...&app_key=...)</div>`;
+        document.getElementById('outbound-trains').innerHTML = `<div class="empty" style="color:var(--ochre)">Missing #app_id=...&app_key=... in URL hash</div>`;
+        document.getElementById('return-trains').innerHTML = `<div class="empty" style="color:var(--ochre)">Missing #app_id=...&app_key=... in URL hash</div>`;
         return;
       }
 
@@ -544,55 +577,81 @@
       }
     }
 
-    // 4. City Events
+    // 4. Ticketmaster Events Fetcher (AO, Co-op Live, Old Trafford, Etihad)
     async function fetchEvents() {
       const container = document.getElementById('events-stream');
-      if (!GOOGLE_KEY || !CAL_ID) {
+      
+      if (!TM_KEY) {
         container.innerHTML = `
           <div class="event-row">
-            <span class="event-time">--:--</span>
-            <span class="event-desc" style="color:var(--text-muted)">Connect calendar via hash to view live arena/match events</span>
-            <span class="event-loc">Etihad / Old Trafford / AO / Co-op Live</span>
+            <span class="event-tag tomorrow">SETUP</span>
+            <span class="event-desc" style="color:var(--text-muted)">Add &tm_key=YOUR_KEY to URL hash to activate live arena & stadium alerts</span>
+            <span class="event-loc">AO / Co-op / Etihad / Old Trafford</span>
           </div>
         `;
         return;
       }
 
       const now = new Date();
-      const start = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
-      const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59).toISOString();
+      const startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+      const endTomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 23, 59, 59);
+
+      const startDateTime = startToday.toISOString().split('.')[0] + 'Z';
+      const endDateTime = endTomorrow.toISOString().split('.')[0] + 'Z';
+
+      const url = `https://app.ticketmaster.com/discovery/v2/events.json?apikey=${TM_KEY}&venueId=${MANCHESTER_VENUES}&startDateTime=${startDateTime}&endDateTime=${endDateTime}&sort=date,asc&size=8`;
 
       try {
-        const res = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(CAL_ID)}/events?timeMin=${start}&timeMax=${end}&singleEvents=true&orderBy=startTime&key=${GOOGLE_KEY}`);
+        const res = await fetch(url);
         const data = await res.json();
-        const items = data.items || [];
+        const events = data._embedded?.events || [];
 
-        if (items.length === 0) {
-          container.innerHTML = `<div class="empty">✅ No major stadium or arena events flagged today. Normal city travel.</div>`;
+        if (events.length === 0) {
+          container.innerHTML = `<div class="empty">✅ No major arena or stadium events today or tomorrow. Normal city travel.</div>`;
           return;
         }
 
-        container.innerHTML = items.map(ev => {
-          const t = ev.start.dateTime ? new Date(ev.start.dateTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'All Day';
+        const todayStr = now.toISOString().split('T')[0];
+
+        container.innerHTML = events.map(ev => {
+          const datePart = ev.dates.start.localDate;
+          const isToday = datePart === todayStr;
+          const tagClass = isToday ? 'today' : 'tomorrow';
+          const tagLabel = isToday ? 'TODAY' : 'TOMORROW';
+
+          const time = ev.dates.start.localTime 
+            ? ev.dates.start.localTime.substring(0, 5) 
+            : 'TBD';
+
+          const venueName = ev._embedded?.venues?.[0]?.name || 'Manchester';
+          const isFooty = ev.classifications?.[0]?.segment?.name === 'Sports';
+          const icon = isFooty ? '⚽' : '🎤';
+
           return `
             <div class="event-row">
-              <span class="event-time">${t}</span>
-              <span class="event-desc">⚽/🎤 ${ev.summary}</span>
-              <span class="event-loc">${ev.location || 'Manchester'}</span>
+              <span class="event-tag ${tagClass}">${tagLabel}</span>
+              <span class="event-time">${time}</span>
+              <span class="event-desc">${icon} ${ev.name}</span>
+              <span class="event-loc">${venueName}</span>
             </div>
           `;
         }).join('');
-      } catch (e) {
-        container.innerHTML = `<div class="empty">Unable to check events.</div>`;
+
+      } catch (err) {
+        console.error("Events fetch failed:", err);
+        container.innerHTML = `<div class="empty">Unable to check arena/stadium schedules.</div>`;
       }
     }
 
+    // Initial triggers
     fetchWeather();
     fetchTrains();
     fetchEvents();
 
-    setInterval(fetchTrains, 60000);
-    setInterval(fetchWeather, 600000);
+    // Auto-refresh timers
+    setInterval(fetchTrains, 60000);     // Every 60s for trains
+    setInterval(fetchWeather, 600000);   // Every 10 mins for weather
+    setInterval(fetchEvents, 3600000);   // Every 60 mins for event rosters
   </script>
 </body>
 </html>
