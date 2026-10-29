@@ -578,70 +578,93 @@
     }
 
     // 4. Ticketmaster Events Fetcher (AO, Co-op Live, Old Trafford, Etihad)
-    async function fetchEvents() {
-      const container = document.getElementById('events-stream');
-      
-      if (!TM_KEY) {
-        container.innerHTML = `
-          <div class="event-row">
-            <span class="event-tag tomorrow">SETUP</span>
-            <span class="event-desc" style="color:var(--text-muted)">Add &tm_key=YOUR_KEY to URL hash to activate live arena & stadium alerts</span>
-            <span class="event-loc">AO / Co-op / Etihad / Old Trafford</span>
-          </div>
-        `;
-        return;
-      }
+    // Updated venue IDs including Co-op Live aliases and stadium codes
+const MANCHESTER_VENUES = [
+  'KovZpZAJa1aA', // AO Arena
+  'KovZ917AAwH', // Co-op Live (Primary)
+  'KovZ917AJmF', // Co-op Live (Secondary listing ID)
+  'KovZpZAEk7AA', // Old Trafford
+  'KovZpZAEkn1A'  // Etihad Stadium
+].join(',');
 
-      const now = new Date();
-      const startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
-      const endTomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 23, 59, 59);
+async function fetchEvents() {
+  const container = document.getElementById('events-stream');
+  
+  if (!TM_KEY) {
+    container.innerHTML = `
+      <div class="event-row">
+        <span class="event-tag tomorrow">SETUP</span>
+        <span class="event-desc" style="color:var(--text-muted)">Add &tm_key=YOUR_KEY to URL hash to activate live arena & stadium alerts</span>
+        <span class="event-loc">AO / Co-op / Etihad / Old Trafford</span>
+      </div>
+    `;
+    return;
+  }
 
-      const startDateTime = startToday.toISOString().split('.')[0] + 'Z';
-      const endDateTime = endTomorrow.toISOString().split('.')[0] + 'Z';
+  // Use local date strings to prevent timezone/UTC clipping
+  const now = new Date();
+  const tomorrow = new Date(now);
+  tomorrow.setDate(tomorrow.getDate() + 1);
 
-      const url = `https://app.ticketmaster.com/discovery/v2/events.json?apikey=${TM_KEY}&venueId=${MANCHESTER_VENUES}&startDateTime=${startDateTime}&endDateTime=${endDateTime}&sort=date,asc&size=8`;
+  const pad = (n) => String(n).padStart(2, '0');
+  const todayStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+  const tomorrowStr = `${tomorrow.getFullYear()}-${pad(tomorrow.getMonth() + 1)}-${pad(tomorrow.getDate())}`;
 
-      try {
-        const res = await fetch(url);
-        const data = await res.json();
-        const events = data._embedded?.events || [];
+  // Start from the beginning of today in UTC format
+  const startDateTime = `${todayStr}T00:00:00Z`;
+  const endDateTime = `${tomorrowStr}T23:59:59Z`;
 
-        if (events.length === 0) {
-          container.innerHTML = `<div class="empty">✅ No major arena or stadium events today or tomorrow. Normal city travel.</div>`;
-          return;
-        }
+  const url = `https://app.ticketmaster.com/discovery/v2/events.json?apikey=${TM_KEY}&venueId=${MANCHESTER_VENUES}&startDateTime=${startDateTime}&endDateTime=${endDateTime}&sort=date,asc&size=20`;
 
-        const todayStr = now.toISOString().split('T')[0];
+  try {
+    const res = await fetch(url);
+    const data = await res.json();
+    const rawEvents = data._embedded?.events || [];
 
-        container.innerHTML = events.map(ev => {
-          const datePart = ev.dates.start.localDate;
-          const isToday = datePart === todayStr;
-          const tagClass = isToday ? 'today' : 'tomorrow';
-          const tagLabel = isToday ? 'TODAY' : 'TOMORROW';
+    // Filter out duplicate entries (e.g. VIP packages / parking passes sold as separate events)
+    const seenNames = new Set();
+    const events = rawEvents.filter(ev => {
+      // Basic deduplication on main event title
+      const baseName = ev.name.split(' - ')[0].trim().toLowerCase();
+      if (seenNames.has(baseName)) return false;
+      seenNames.add(baseName);
+      return true;
+    });
 
-          const time = ev.dates.start.localTime 
-            ? ev.dates.start.localTime.substring(0, 5) 
-            : 'TBD';
-
-          const venueName = ev._embedded?.venues?.[0]?.name || 'Manchester';
-          const isFooty = ev.classifications?.[0]?.segment?.name === 'Sports';
-          const icon = isFooty ? '⚽' : '🎤';
-
-          return `
-            <div class="event-row">
-              <span class="event-tag ${tagClass}">${tagLabel}</span>
-              <span class="event-time">${time}</span>
-              <span class="event-desc">${icon} ${ev.name}</span>
-              <span class="event-loc">${venueName}</span>
-            </div>
-          `;
-        }).join('');
-
-      } catch (err) {
-        console.error("Events fetch failed:", err);
-        container.innerHTML = `<div class="empty">Unable to check arena/stadium schedules.</div>`;
-      }
+    if (events.length === 0) {
+      container.innerHTML = `<div class="empty">✅ No major arena or stadium events today or tomorrow. Normal city travel.</div>`;
+      return;
     }
+
+    container.innerHTML = events.map(ev => {
+      const datePart = ev.dates.start.localDate;
+      const isToday = datePart === todayStr;
+      const tagClass = isToday ? 'today' : 'tomorrow';
+      const tagLabel = isToday ? 'TODAY' : 'TOMORROW';
+
+      const time = ev.dates.start.localTime 
+        ? ev.dates.start.localTime.substring(0, 5) 
+        : 'Evening';
+
+      const venueName = ev._embedded?.venues?.[0]?.name || 'Manchester';
+      const isFooty = ev.classifications?.[0]?.segment?.name === 'Sports';
+      const icon = isFooty ? '⚽' : '🎤';
+
+      return `
+        <div class="event-row">
+          <span class="event-tag ${tagClass}">${tagLabel}</span>
+          <span class="event-time">${time}</span>
+          <span class="event-desc">${icon} ${ev.name}</span>
+          <span class="event-loc">${venueName}</span>
+        </div>
+      `;
+    }).join('');
+
+  } catch (err) {
+    console.error("Events fetch failed:", err);
+    container.innerHTML = `<div class="empty">Unable to check arena/stadium schedules.</div>`;
+  }
+}
 
     // Initial triggers
     fetchWeather();
